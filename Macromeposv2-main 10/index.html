@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#1B0B69" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C0A17" media="(prefers-color-scheme: dark)">
+<title>Macrome Electronics — POS System</title>
+<meta name="application-name" content="Macrome Electronics">
+<meta name="description" content="Macrome Electronics POS — Sales, Inventory, Reports & KRA TOT">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Macrome Electronics">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="msapplication-TileColor" content="#1B0B69">
+<meta name="msapplication-tap-highlight" content="no">
+<meta name="format-detection" content="telephone=no">
+<!-- PWA Manifest injected inline via JS below -->
+<link rel="manifest" href="manifest.webmanifest">
+<!-- Apple touch icons (inline SVG-based, set via JS) -->
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="stylesheet" href="vendor/fonts.css" onerror="this.onerror=null;this.href='https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap'">
+<script src="vendor/chart.umd.min.js"></script>
+<script>window.Chart||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>')</script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script>window.jspdf||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>')</script>
+<script src="vendor/html2canvas.min.js"></script>
+<script>window.html2canvas||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>')</script>
+<link rel="stylesheet" href="css/app.css?v=008f923ea2">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-art">
+    <div class="art-bg"></div>
+    <div class="login-brand-mark">
+    <div class="m-badge" style="width:84px;height:84px;font-size:56px;border-radius:24px">M</div><div class="lbm-text"><div class="lbm-name">MACROME</div><div class="lbm-sub">ELECTRONICS</div></div>
+  </div>
+    <div class="login-h">Smart POS for the <em>modern</em> home.</div>
+    <div class="login-sub">Manage stock, process sales, track staff performance and grow your furniture, electronics and household goods business — all in one modern platform.</div>
+    <div class="login-stats">
+      <div class="lstat"><div class="lstat-v">7</div><div class="lstat-l">Categories</div></div>
+      <div class="lstat"><div class="lstat-v">M-Pesa</div><div class="lstat-l">Integrated</div></div>
+      <div class="lstat"><div class="lstat-v">Offline</div><div class="lstat-l">Ready</div></div>
+    </div>
+  </div>
+  <div class="login-form">
+    <div class="login-brand-mark form-brand-mark">
+    <div class="lbm-icon m-badge">M</div>
+    <div><div class="lbm-name">MACROME</div><div class="lbm-sub">ELECTRONICS</div></div>
+  </div>
+    <h2 id="lg-h">Welcome back</h2>
+    <p id="lg-p">Sign in to your business dashboard</p>
+    <div class="ff" id="lg-name-w" style="display:none"><label for="ln">Your name</label><input type="text" id="ln" maxlength="40" autocomplete="name" placeholder="e.g. Grace Wanjiru"></div>
+    <div class="ff"><label for="lu">Username</label><input type="text" id="lu" maxlength="20" autocomplete="username" autocapitalize="none" spellcheck="false"></div>
+    <div class="ff"><label for="lp">Password</label><input type="password" id="lp" autocomplete="current-password"></div>
+    <div class="ff" id="lp2-w" style="display:none"><label for="lp2">Confirm password</label><input type="password" id="lp2" autocomplete="new-password"></div>
+    <div class="ff" id="lsc-w" style="display:none"><label for="lsc">Setup code</label><input type="password" id="lsc" maxlength="64" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="The code from your Firebase rules"></div>
+    <div id="lg-cloud" role="status" style="font-size:12px;font-weight:600;color:var(--g400);margin-bottom:10px;display:none"></div>
+    <div class="pm-err" id="lg-err" role="alert"></div>
+    <button class="login-btn" id="lg-btn" onclick="doLogin()">
+      <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M11 7L9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-8v2h8v14z"/></svg>
+      <span id="lg-btn-t">Sign In to Dashboard</span>
+    </button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<div class="shell">
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sb-logo"><div class="sb-brand-mark">
+    <div class="sb-brand-icon m-badge">M</div>
+    <div><div class="sb-brand-name">MACROME</div><div class="sb-brand-sub">ELECTRONICS</div></div>
+  </div></div>
+  <div class="sb-nav">
+    <div class="sb-sec">Main</div>
+    <div class="ni active" data-page="dashboard" onclick="go('dashboard',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span class="ni-lbl">Dashboard</span></div>
+    <div class="ni" data-page="pos" onclick="go('pos',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg><span class="ni-lbl">Point of Sale</span></div>
+    <div class="sb-sec">Management</div>
+    <div class="ni" data-page="inventory" onclick="go('inventory',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span class="ni-lbl">Inventory</span><span class="nb warn" id="nb-inv" style="display:none">0</span></div>
+    <div class="ni" data-page="reports" onclick="go('reports',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg><span class="ni-lbl">Reports</span></div>
+    <div class="ni" data-page="profit" onclick="go('profit',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11 2v20c-5.07-.5-9-4.79-9-10s3.93-9.5 9-10zm2.03 0v8.99H22c-.47-4.74-4.24-8.52-8.97-8.99zm0 11.01V22c4.74-.47 8.5-4.25 8.97-8.99h-8.97z"/></svg><span class="ni-lbl">Profit Report</span></div>
+    <div class="ni" data-page="tot-report" onclick="go('tot-report',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg><span class="ni-lbl">KRA TOT Report</span></div>
+    <div class="ni" data-page="customers" onclick="go('customers',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span class="ni-lbl">Customers</span></div>
+    <div class="ni" data-page="suppliers" onclick="go('suppliers',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/></svg><span class="ni-lbl">Suppliers</span></div>
+    <div class="ni" data-page="expenses" onclick="go('expenses',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg><span class="ni-lbl">Expenses</span></div>
+    <div class="sb-sec">System</div>
+    <div class="ni" data-page="settings" onclick="go('settings',this)">
+      <svg class="ni-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><span class="ni-lbl">Settings</span></div>
+  </div>
+  <div class="sb-foot">
+    <div class="sb-user">
+      <div class="sb-av" id="av">AM</div>
+      <div class="sb-ui"><div class="sb-un" id="uname">Admin Manager</div><div class="sb-ur" id="urole">Administrator</div></div>
+      <button class="logout-btn" onclick="requestLogout()" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></button>
+    </div>
+  </div>
+</nav>
+<div class="sb-overlay" id="sbOv" onclick="closeSB()"></div>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <button class="ham" onclick="toggleSB()" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
+    <div class="tb-titles"><div class="tb-title" id="page-title">Dashboard</div><div class="tb-sub" id="tb-sub"></div></div>
+    <div class="tb-right">
+      <div id="shop-ctl"></div>
+      <button class="dm-btn" onclick="toggleDark()" title="Toggle dark/light mode" aria-label="Toggle dark or light mode" id="dmBtn">
+        <svg class="ico-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg>
+        <svg class="ico-sun" viewBox="0 0 24 24" fill="currentColor"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 0 0-1.41 0 .996.996 0 0 0 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0a.996.996 0 0 0 0-1.41l-1.06-1.06zm1.06-12.37-1.06 1.06a.996.996 0 0 0 0 1.41c.39.39 1.03.39 1.41 0l1.06-1.06a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0zM7.05 18.36l-1.06 1.06a.996.996 0 0 0 0 1.41c.39.39 1.03.39 1.41 0l1.06-1.06a.996.996 0 0 0 0-1.41.996.996 0 0 0-1.41 0z"/></svg>
+      </button>
+      <button class="tb-logout" onclick="requestLogout()" aria-label="Log out" title="Log out"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg></button>
+      <div class="live-badge"><div class="live-dot"></div><span>Live</span></div>
+    </div>
+  </header>
+
+  <!-- DASHBOARD PAGE -->
+  <div id="dashboard" class="page-wrap page show">
+    <div id="backup-nudge" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;background:var(--gold-p);border:1.5px solid var(--warn-bd);border-radius:12px;padding:12px 14px;margin-bottom:14px">
+      <div style="flex:1;min-width:200px"><div id="bkn-title" style="font-size:13px;font-weight:800;color:var(--ink)">Back up your data</div><div id="bkn-sub" style="font-size:12px;color:var(--g600)"></div></div>
+      <button class="btn btn-p" onclick="shareBackup()">Share backup</button>
+      <button class="btn btn-s" onclick="snoozeBackupNudge()">Later</button>
+    </div>
+    <div class="dash-top">
+      <div><div class="dash-greet" id="greeting">Good morning, Manager <svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 17c0 3.31-2.69 6-6 6v-1.5c2.48 0 4.5-2.02 4.5-4.5H23zM1 7c0-3.31 2.69-6 6-6v1.5C4.52 2.5 2.5 4.52 2.5 7H1zm7.01-2.68-4.6 4.6c-3.22 3.22-3.22 8.45 0 11.67s8.45 3.22 11.67 0l7.07-7.07c.49-.49.49-1.28 0-1.77a1.25 1.25 0 0 0-1.77 0l-4.42 4.42-.71-.71 6.54-6.54c.49-.49.49-1.28 0-1.77s-1.28-.49-1.77 0l-5.83 5.83-.71-.71 6.89-6.89c.49-.49.49-1.28 0-1.77s-1.28-.49-1.77 0l-6.89 6.89-.69-.7 5.48-5.48c.49-.49.49-1.28 0-1.77s-1.28-.49-1.77 0l-7.62 7.62a4.003 4.003 0 0 1-.33 5.28l-.71-.71a3 3 0 0 0 0-4.24l-.35-.35 4.07-4.07c.49-.49.49-1.28 0-1.77a1.27 1.27 0 0 0-1.78.01z"/></svg></div><div class="dash-date" id="dash-date"></div></div>
+      <div class="dash-acts">
+        <button class="btn btn-p" onclick="go('pos',document.querySelector('[data-page=pos]'))"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg><span>New Sale</span></button>
+      </div>
+    </div>
+    <div class="dash-today">
+      <div class="kpi kpi-hero"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--green),var(--leaf))"></div><div class="kpi-l">Today's revenue</div><div class="kpi-v" id="dash-kpi-revenue">KES 0</div><div class="kpi-d up" id="dash-kpi-revenue-sub">Sales recorded today</div></div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--gold),var(--gold-l))"></div><div class="kpi-l">Sales today</div><div class="kpi-v" id="dash-kpi-cust">0</div><div class="kpi-d up" id="dash-kpi-cust-sub">Transactions</div></div>
+      <div class="kpi dash-profit" onclick="go('profit',document.querySelector('[data-page=profit]'))" title="Open the profit report" role="button" tabindex="0"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--leaf),var(--sage))"></div><div class="kpi-l">Gross profit today</div><div class="kpi-v" id="dash-pf-today">KES 0</div><div class="kpi-d" id="dash-pf-today-s"></div></div>
+    </div>
+    <div class="card dash-month">
+      <div class="card-h dash-month-h"><div class="card-title">This month</div><button class="btn btn-s dash-more" onclick="go('profit',document.querySelector('[data-page=profit]'))">Profit report</button></div>
+      <div class="card-b dash-mrows">
+        <div class="mrow"><div class="mrow-l">Revenue</div><div class="mrow-v" id="dash-kpi-monthly">KES 0</div><div class="mrow-s">This month so far</div></div>
+        <div class="mrow"><div class="mrow-l">Gross profit</div><div class="mrow-v" id="dash-pf-month">KES 0</div><div class="mrow-s" id="dash-pf-month-s"></div></div>
+        <div class="mrow"><div class="mrow-l">Net profit</div><div class="mrow-v" id="dash-pf-net">KES 0</div><div class="mrow-s" id="dash-pf-net-s"></div></div>
+        <div class="mrow"><div class="mrow-l">Est. TOT (1.5%)</div><div class="mrow-v" id="dash-kpi-tot">KES 0.00</div><div class="mrow-s" id="dash-kpi-tot-sub">Est. tax payable</div></div>
+      </div>
+    </div>
+    <div class="card" id="dash-shops-card" style="margin-bottom:18px;display:none"><div class="card-h"><div class="card-title">Shops compared</div><div class="card-sub">Tap a shop to open it</div></div><div class="card-b"><div class="txn-tw" id="dash-shops"></div></div></div>
+    <div class="dash-grid">
+      <div>
+        <div class="card dash-c-rev" style="margin-bottom:16px">
+          <div class="card-h" style="padding-bottom:16px;display:flex;align-items:center;justify-content:space-between"><div><div class="card-title">Revenue Overview</div><div class="card-sub">Last 8 weeks</div></div><span class="badge bg" id="dash-week-badge">This week</span></div>
+          <div class="card-b" style="padding-top:0"><div class="chart-area"><canvas id="dashBar"></canvas></div></div>
+        </div>
+        <div class="card dash-c-recent">
+          <div class="card-h" style="padding-bottom:16px"><div class="card-title">Recent Transactions</div><div class="card-sub">Today</div></div>
+          <div class="card-b" style="padding-top:0;overflow-x:auto">
+            <table style="min-width:400px"><thead><tr><th>Receipt</th><th>Cashier</th><th>Items</th><th>Amount</th><th>Pay</th><th>Time</th></tr></thead>
+            <tbody id="dash-recent"><tr><td colspan="6" style="text-align:center;color:var(--g400);padding:18px;font-size:12px">No sales yet today</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+      <div class="dash-right">
+        <div class="card dash-c-top"><div class="card-h"><div class="card-title">Top Products</div><div class="card-sub">By revenue today</div></div><div class="card-b"><div class="tpl" id="dash-top"><div style="color:var(--g400);font-size:12px;padding:6px 0">Top sellers appear after the first sale</div></div></div></div>
+        <div class="card dash-c-alerts"><div class="card-h"><div class="card-title">Stock Alerts</div><div class="card-sub">Needs attention</div></div><div class="card-b"><div class="al" id="dash-alerts"></div></div></div>
+        <div class="card dash-c-cash"><div class="card-h"><div class="card-title">Cashier Performance</div><div class="card-sub">Today</div></div><div class="card-b"><div class="cl" id="dash-cashiers"><div style="color:var(--g400);font-size:12px;padding:6px 0">Cashier totals appear after the first sale</div></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POS PAGE -->
+  <div id="pos-page" class="page">
+    <div class="pos-prods">
+      <div class="pos-sb">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input id="pos-search" aria-label="Search products" placeholder="Search products or scan barcode…" oninput="filterProds()" onkeydown="posSearchKey(event)">
+        <svg id="scan-cam-btn" onclick="openScanner()" role="button" tabindex="0" aria-label="Scan barcode with camera" title="Scan with camera" viewBox="0 0 24 24" fill="currentColor" style="color:var(--text-brand);cursor:pointer"><path d="M1 5h2v14H1zm4 0h1v14H5zm2 0h3v14H7zm4 0h1v14h-1zm3 0h2v14h-2zm3 0h1v14h-1zm2 0h2v14h-2z"/></svg>
+      </div>
+      <div class="pos-cats" id="pos-cats"><div class="cpill on" onclick="setCat('All',this)">All</div></div>
+      <div class="pgrid" id="pgrid"></div>
+    </div>
+    <div class="pos-cart">
+      <div class="cart-hd"><div class="cart-hdl"><h3>Current Sale</h3><p id="cart-count">0 items</p></div><button class="cart-clr" onclick="clearCart()">Clear</button></div>
+      <div class="cart-bd" id="cart-bd"></div>
+      <div class="cart-ft">
+        <div class="tot-row"><span class="tot-l">Subtotal</span><span class="tot-v" id="c-sub">KES 0</span></div>
+        <div class="tot-row tot-grand"><span class="tot-l">Total</span><span class="tot-v" id="c-tot">KES 0</span></div>
+        <div class="pay-chips">
+          <div class="pchip on" id="pc-cash" onclick="selPay('cash')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z"/></svg> Cash</div>
+          <div class="pchip" id="pc-mpesa" onclick="selPay('mpesa')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 1.01 7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg> M-Pesa</div>
+          <div class="pchip" id="pc-card" onclick="selPay('card')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg> Card</div>
+        </div>
+        <div class="pay-extra" id="pay-extra"></div>
+        <button class="chk-btn" id="chk-btn" onclick="checkout()" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Complete Sale
+        </button>
+      </div>
+    </div>
+    <button class="mob-fab" id="cartFab" onclick="openDrawer()">
+      <svg viewBox="0 0 24 24" fill="currentColor" style="width:20px;height:20px"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+      Cart <div class="fab-cnt" id="fabCnt">0</div>
+    </button>
+  </div>
+
+  <!-- INVENTORY -->
+  <div id="inventory" class="page-wrap page">
+    <div class="inv-bar">
+      <div class="inv-srch"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg><input id="inv-search" aria-label="Search inventory" placeholder="Search inventory…" oninput="setInvQuery(this.value)"></div>
+      <button class="btn btn-s" id="inv-filter-btn" onclick="cycleInvFilter()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg><span id="inv-filter-lbl">All stock</span></button>
+      <button class="btn btn-s" id="inv-import-btn" onclick="document.getElementById('inv-csv-file').click()">Import CSV</button>
+      <button class="btn btn-s" onclick="exportInvCSV()">Export</button>
+      <button class="btn btn-p" id="inv-add-btn" onclick="openProdModal()"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Add Product</button>
+      <input type="file" id="inv-csv-file" accept=".csv,text/csv,text/plain" style="display:none" onchange="importInvCSV(this)">
+    </div>
+    <div id="inv-summary"></div>
+    <div class="card">
+      <div class="inv-tw"><table><thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>Retail</th><th>Cost</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead><tbody id="inv-tbody"></tbody></table></div>
+      <div class="inv-cards" id="inv-cards"></div>
+    </div>
+    <div class="card" style="margin-top:16px"><div class="card-h"><div class="card-title">Recent stock transfers</div></div><div class="card-b"><div class="txn-tw" id="xfer-log"></div></div></div>
+    <div class="card" style="margin-top:16px;display:none"><div class="card-h"><div class="card-title">Stock received this month</div></div><div class="card-b"><div class="txn-tw" id="rcv-log"></div></div></div>
+  </div>
+
+  <!-- REPORTS -->
+  <div id="reports" class="page-wrap page">
+    <div class="dash-top" style="margin-bottom:16px">
+      <div><div class="dash-greet">Sales Reports</div><div class="dash-date" id="rep-period">KRA TOT Compliant</div></div>
+      <div class="dash-acts"><button class="btn btn-s" onclick="exportReportsCSV()"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><span>Export CSV</span></button><button class="btn btn-p" onclick="exportReportsPDF()"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg><span>Export PDF</span></button></div>
+    </div>
+    <div class="rep-grid">
+      <div class="card"><div class="card-h"><div class="card-title">Weekly Revenue</div><div class="card-sub">KES trend</div></div><div class="card-b"><div class="rch"><canvas id="repBar"></canvas></div></div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Payment Methods</div><div class="card-sub">Split</div></div><div class="card-b">
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <canvas id="repDonut" width="110" height="110"></canvas>
+          <div class="pm-bars" style="flex:1;min-width:120px">
+            <div class="pmr"><div class="pml">M-Pesa</div><div class="pmt"><div class="pmf" id="pm-mpesa" style="width:0%;background:var(--green)"></div></div><div class="pmp" id="pm-mpesa-p">0%</div></div>
+            <div class="pmr"><div class="pml">Cash</div><div class="pmt"><div class="pmf" id="pm-cash" style="width:0%;background:var(--gold)"></div></div><div class="pmp" id="pm-cash-p">0%</div></div>
+            <div class="pmr"><div class="pml">Card</div><div class="pmt"><div class="pmf" id="pm-card" style="width:0%;background:var(--info)"></div></div><div class="pmp" id="pm-card-p">0%</div></div>
+          </div>
+        </div>
+      </div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Sales by Day</div><div class="card-sub">This week</div></div><div class="card-b"><div class="rch"><canvas id="repStack"></canvas></div></div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Revenue by Category</div><div class="card-sub">This month</div></div><div class="card-b"><div class="rch"><canvas id="repCat"></canvas></div></div></div>
+    </div>
+    <div class="card" id="bs-card" style="margin-bottom:16px">
+      <div class="card-h" style="padding-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><div class="card-title">Best sellers by shop</div><div class="card-sub" id="bs-sub"></div></div>
+        <select id="bs-period" onchange="renderBestSellers()" aria-label="Period" style="max-width:180px;padding:10px 12px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)"><option value="today">Today</option><option value="week">This week</option><option value="month" selected>This month</option><option value="year">This year</option><option value="all">All time</option></select></div>
+      <div class="card-b" style="padding-top:0" id="bs-body"></div>
+    </div>
+    <div class="card">
+      <div class="card-h" style="padding-bottom:16px"><div class="card-title">Transaction Log</div></div>
+      <div class="card-b" style="padding-top:0"><div class="txn-tw"><table style="min-width:480px"><thead><tr><th>Receipt #</th><th>Cashier</th><th>Items</th><th>Payment</th><th>Total</th><th>Time</th></tr></thead>
+      <tbody id="rep-log"><tr><td colspan="6" style="text-align:center;color:var(--g400);padding:18px;font-size:12px">No transactions yet</td></tr></tbody></table></div></div>
+    </div>
+  </div>
+
+  <!-- PROFIT REPORT -->
+  <div id="profit" class="page-wrap page">
+    <div class="dash-top" style="margin-bottom:16px">
+      <div><div class="dash-greet">Profit Report</div><div class="dash-date" id="pf-range-label">Revenue, cost of goods, expenses and net profit</div></div>
+      <div class="dash-acts"><button class="btn btn-s" onclick="exportProfitCSV()"><span>Export CSV</span></button><button class="btn btn-p" onclick="exportProfitPDF()"><span>Export PDF</span></button></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-b" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
+        <div class="ff" style="margin:0;flex:1;min-width:150px"><label for="pf-period">Period</label>
+          <select id="pf-period" onchange="renderProfit()" style="width:100%;padding:10px 12px;min-height:42px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)">
+            <option value="today">Today</option><option value="week">This week</option><option value="month" selected>This month</option><option value="last">Last month</option><option value="year">This year</option><option value="custom">Custom range…</option>
+          </select></div>
+        <div class="ff pf-custom" style="margin:0;flex:1;min-width:140px;display:none"><label for="pf-from">From</label><input type="date" id="pf-from" onchange="renderProfit()"></div>
+        <div class="ff pf-custom" style="margin:0;flex:1;min-width:140px;display:none"><label for="pf-to">To</label><input type="date" id="pf-to" onchange="renderProfit()"></div>
+      </div>
+    </div>
+    <div id="pf-warn" class="pf-warn" style="display:none"></div>
+    <div class="kpi-grid" style="margin-bottom:12px">
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--green),var(--leaf))"></div><div class="kpi-v" id="pf-k-rev">KES 0</div><div class="kpi-l">Sales revenue</div><div class="kpi-d" id="pf-k-rev-s"></div></div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--gold),var(--gold-l))"></div><div class="kpi-v" id="pf-k-cogs">KES 0</div><div class="kpi-l">Cost of goods sold</div><div class="kpi-d" id="pf-k-cogs-s"></div></div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--leaf),var(--sage))"></div><div class="kpi-v" id="pf-k-gross">KES 0</div><div class="kpi-l">Gross profit</div><div class="kpi-d" id="pf-k-gross-s"></div></div>
+      <div class="kpi"><div class="kpi-ac" id="pf-k-net-ac" style="background:linear-gradient(90deg,var(--green),var(--leaf))"></div><div class="kpi-v" id="pf-k-net">KES 0</div><div class="kpi-l">Net profit</div><div class="kpi-d" id="pf-k-net-s"></div></div>
+    </div>
+    <div class="rep-grid">
+      <div class="card"><div class="card-h"><div class="card-title">Profit &amp; Loss</div><div class="card-sub">For the selected period</div></div><div class="card-b"><table class="pf-pl"><tbody id="pf-pl"></tbody></table></div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Revenue vs Gross Profit</div><div class="card-sub" id="pf-chart-sub">By day</div></div><div class="card-b"><div class="rch"><canvas id="pfChart"></canvas></div></div></div>
+    </div>
+    <div class="card" id="pf-shops-card" style="margin-bottom:16px;display:none">
+      <div class="card-h" style="padding-bottom:16px"><div class="card-title">Profit by shop</div><div class="card-sub">Selected period · tap a shop to open its own report</div></div>
+      <div class="card-b" style="padding-top:0"><div class="txn-tw"><table class="pf-shops-t"><thead><tr><th>Shop</th><th>Revenue</th><th class="hm">Gross profit</th><th class="hm">Margin</th><th class="hm">Expenses</th><th>Net profit</th></tr></thead><tbody id="pf-shops"></tbody></table></div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-h" style="padding-bottom:16px"><div class="card-title">Profit by Product</div><div class="card-sub">Best earners first</div></div>
+      <div class="card-b" style="padding-top:0"><div class="txn-tw"><table style="min-width:560px"><thead><tr><th>Product</th><th>Qty sold</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th></tr></thead><tbody id="pf-prod"></tbody></table></div></div>
+    </div>
+    <div class="rep-grid">
+      <div class="card"><div class="card-h"><div class="card-title">Profit by Category</div></div><div class="card-b" style="padding-top:0"><div class="txn-tw"><table style="min-width:360px"><thead><tr><th>Category</th><th>Revenue</th><th>Profit</th><th>Margin</th></tr></thead><tbody id="pf-cat"></tbody></table></div></div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Expenses by Category</div><div class="card-sub"><a href="#" onclick="go('expenses',document.querySelector('[data-page=expenses]'));return false" style="color:var(--text-brand);font-weight:700">Add / manage expenses →</a></div></div><div class="card-b" style="padding-top:0"><div class="txn-tw"><table style="min-width:300px"><thead><tr><th>Category</th><th>Amount</th></tr></thead><tbody id="pf-exp"></tbody></table></div></div></div>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS -->
+  <div id="customers" class="page-wrap page"><div class="spage"><div class="sp-ico"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12.75c1.63 0 3.07.39 4.24.9 1.08.48 1.76 1.56 1.76 2.73V18H6v-1.61c0-1.18.68-2.26 1.76-2.73 1.17-.52 2.61-.91 4.24-.91zM4 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm1.13 1.1c-.37-.06-.74-.1-1.13-.1-.99 0-1.93.21-2.78.58A2.01 2.01 0 0 0 0 16.43V18h4.5v-1.61c0-.83.23-1.61.63-2.29zM20 13c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm4 3.43c0-.81-.48-1.53-1.22-1.85A6.95 6.95 0 0 0 20 14c-.39 0-.76.04-1.13.1.4.68.63 1.46.63 2.29V18H24v-1.57zM12 6c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/></svg></div><h2>Customer Management</h2><p>Track loyal customers, purchase history, and manage relationships for Macrome Electronics.</p><div class="sp-stats"><div class="spstat"><div class="spstv" style="color:var(--text-brand)">0</div><div class="spstl">Total</div></div><div class="spstat"><div class="spstv" style="color:var(--text-gold)">0</div><div class="spstl">Active Today</div></div><div class="spstat"><div class="spstv" style="color:var(--info-text)">0</div><div class="spstl">Loyalty</div></div></div><button class="btn btn-p" style="margin-top:8px">Add Customer</button></div></div>
+  <!-- SUPPLIERS -->
+  <div id="suppliers" class="page-wrap page"><div class="spage"><div class="sp-ico"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9 1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></div><h2>Supplier Management</h2><p>Manage supplier relationships, track purchase orders and delivery schedules for your furniture, electronics and household stock.</p><div class="sp-stats"><div class="spstat"><div class="spstv" style="color:var(--text-brand)">0</div><div class="spstl">Suppliers</div></div><div class="spstat"><div class="spstv" style="color:var(--warn-text)">0</div><div class="spstl">Pending</div></div><div class="spstat"><div class="spstv" style="color:var(--text-gold)">0</div><div class="spstl">Overdue</div></div></div></div></div>
+  <!-- EXPENSES -->
+  <div id="expenses" class="page-wrap page">
+    <div class="dash-top" style="margin-bottom:16px">
+      <div><div class="dash-greet">Expenses</div><div class="dash-date">Rent, wages, power, transport and other running costs. Do not add stock purchases here — stock cost is already counted from each product's cost price.</div></div>
+    </div>
+    <div class="kpi-grid kpi3" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--danger),#e74c3c)"></div><div class="kpi-v" id="ex-k-month">KES 0</div><div class="kpi-l">Spent this month</div></div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--gold),var(--gold-l))"></div><div class="kpi-v" id="ex-k-today">KES 0</div><div class="kpi-l">Spent today</div></div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--green),var(--leaf))"></div><div class="kpi-v" id="ex-k-top" style="font-size:18px">—</div><div class="kpi-l">Biggest category (month)</div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-h"><div class="card-title">Add an expense</div></div>
+      <div class="card-b" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+        <div class="ff" style="margin:0;flex:1;min-width:140px"><label for="ex-date">Date</label><input type="date" id="ex-date"></div>
+        <div class="ff" style="margin:0;flex:1;min-width:150px"><label for="ex-shop">Shop</label><select id="ex-shop" style="width:100%;padding:10px 12px;min-height:42px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)"></select></div>
+        <div class="ff" style="margin:0;flex:1;min-width:180px"><label for="ex-cat">Category</label><select id="ex-cat" style="width:100%;padding:10px 12px;min-height:42px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)"></select></div>
+        <div class="ff" style="margin:0;flex:2;min-width:180px"><label for="ex-desc">Note (optional)</label><input type="text" id="ex-desc" maxlength="80" placeholder="e.g. October shop rent"></div>
+        <div class="ff" style="margin:0;flex:1;min-width:120px"><label for="ex-amt">Amount (KES)</label><input type="number" id="ex-amt" inputmode="decimal" min="0" step="any"></div>
+        <button class="btn btn-p" onclick="addExpense()" style="min-height:42px"><span>Add expense</span></button>
+      </div>
+      <div class="pm-err" id="ex-err" style="padding:0 20px 12px"></div>
+    </div>
+    <div class="card">
+      <div class="card-h" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:16px"><div class="card-title">Expense log</div><input type="month" id="ex-month" onchange="renderExpenses()" style="max-width:180px"></div>
+      <div class="card-b" style="padding-top:0"><div class="txn-tw"><table style="min-width:480px"><thead><tr><th>Date</th><th>Category</th><th>Note</th><th>Amount</th><th></th></tr></thead><tbody id="ex-tbody"></tbody></table></div></div>
+    </div>
+  </div>
+
+  <!-- CASHIER HISTORY (cashier-only) -->
+  <div id="cashier-history" class="page-wrap page">
+    <div class="dash-top" style="margin-bottom:16px">
+      <div><div class="dash-greet">My Sales Today</div><div class="dash-date" id="ch-date"></div></div>
+      <button class="btn btn-s" onclick="exportCashierCSV()">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        Export
+      </button>
+    </div>
+    <!-- Cashier KPIs -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px" id="ch-kpis">
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--green),var(--leaf))"></div>
+        <div class="kpi-ico" style="background:var(--pale)"><svg viewBox="0 0 24 24" fill="var(--text-brand)"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
+        <div class="kpi-v" id="ch-revenue">KES 0</div><div class="kpi-l">My Revenue</div><div class="kpi-d up" id="ch-rev-sub"></div>
+      </div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--gold),var(--gold-l))"></div>
+        <div class="kpi-ico" style="background:var(--gold-p)"><svg viewBox="0 0 24 24" fill="var(--text-gold)"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
+        <div class="kpi-v" id="ch-sales">0</div><div class="kpi-l">Sales Made</div><div class="kpi-d up" id="ch-sales-sub"></div>
+      </div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--info),#4f8df7)"></div>
+        <div class="kpi-ico" style="background:var(--info-bg)"><svg viewBox="0 0 24 24" fill="var(--info-text)"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>
+        <div class="kpi-v" id="ch-items">0</div><div class="kpi-l">Items Sold</div><div class="kpi-d up" id="ch-items-sub"></div>
+      </div>
+    </div>
+    <!-- Sales history table -->
+    <div class="card">
+      <div class="card-h" style="padding-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+        <div><div class="card-title">My Sales History</div><div class="card-sub">All transactions processed today</div></div>
+        <span class="badge bg" id="ch-badge">0 sales</span>
+      </div>
+      <div class="card-b" style="padding-top:0">
+        <div id="ch-list" style="overflow-x:auto">
+          <div style="text-align:center;padding:40px;color:var(--g200)">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:40px;height:40px;opacity:.3;margin-bottom:8px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            <p style="font-size:13px">No sales yet — process your first sale in POS!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KRA TOT REPORT PAGE -->
+  <div id="tot-report" class="page-wrap page">
+    <div class="dash-top" style="margin-bottom:16px">
+      <div>
+        <div class="dash-greet">KRA Turnover Tax Report</div>
+        <div class="dash-date">Macrome Electronics — Turnover Tax (TOT) 1.5% Monthly</div>
+      </div>
+      <div class="dash-acts">
+        <button class="btn btn-s" onclick="exportTOTCSV()">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><span>Export CSV</span>
+        </button>
+        <button class="btn btn-p" onclick="exportTOTPDF()">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/></svg><span>Export PDF</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-b" style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
+        <div class="ff" style="margin:0;flex:1;min-width:120px">
+          <label for="tot-month">Month</label>
+          <select id="tot-month" onchange="renderTOTReport()" style="width:100%;padding:10px 12px;min-height:42px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)">
+            <option value="0">January</option><option value="1">February</option><option value="2">March</option>
+            <option value="3">April</option><option value="4">May</option><option value="5">June</option>
+            <option value="6">July</option><option value="7">August</option><option value="8">September</option>
+            <option value="9">October</option><option value="10">November</option><option value="11">December</option>
+          </select>
+        </div>
+        <div class="ff" style="margin:0;flex:1;min-width:100px">
+          <label for="tot-year">Year</label>
+          <select id="tot-year" onchange="renderTOTReport()" style="width:100%;padding:10px 12px;min-height:42px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)">
+            <option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option>
+          </select>
+        </div>
+        <div class="ff" style="margin:0;flex:1;min-width:120px">
+          <label for="tot-branch">Branch</label>
+          <select id="tot-branch" onchange="renderTOTReport()" style="width:100%;padding:10px 12px;min-height:42px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)">
+            <option value="all">All Branches</option>
+            <option value="main">Main Branch</option>
+          </select>
+        </div>
+        <div class="ff" style="margin:0;flex:1;min-width:120px">
+          <label for="tot-cashier">Cashier</label>
+          <select id="tot-cashier" onchange="renderTOTReport()" style="width:100%;padding:10px 12px;min-height:42px;background:var(--g50);border:1.5px solid var(--g100);border-radius:var(--r-sm)">
+            <option value="all">All Cashiers</option>
+            <option value="admin">Admin Manager</option>
+            <option value="cashier">Cashier</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOT Summary Cards -->
+    <div class="kpi-grid" id="tot-kpi-grid" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--green),var(--leaf))"></div>
+        <div class="kpi-ico" style="background:var(--pale)"><svg viewBox="0 0 24 24" fill="var(--text-brand)"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg></div>
+        <div class="kpi-v" id="tot-gross-sales">KES 312,400</div><div class="kpi-l">Total Gross Sales</div><div class="kpi-d up">Month to date</div>
+      </div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--danger),#e74c3c)"></div>
+        <div class="kpi-ico" style="background:var(--bad-bg)"><svg viewBox="0 0 24 24" fill="var(--danger-text)"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg></div>
+        <div class="kpi-v" id="tot-tax-amount">KES 4,686.00</div><div class="kpi-l">Turnover Tax (1.5%)</div><div class="kpi-d dn">Payable to KRA</div>
+      </div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--info),#4f8df7)"></div>
+        <div class="kpi-ico" style="background:var(--info-bg)"><svg viewBox="0 0 24 24" fill="var(--info-text)"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></div>
+        <div class="kpi-v" id="tot-net-revenue">KES 307,714.00</div><div class="kpi-l">Net Revenue After Tax</div><div class="kpi-d up">After TOT deduction</div>
+      </div>
+      <div class="kpi"><div class="kpi-ac" style="background:linear-gradient(90deg,var(--gold),var(--gold-l))"></div>
+        <div class="kpi-ico" style="background:var(--gold-p)"><svg viewBox="0 0 24 24" fill="var(--text-gold)"><path d="M19 3H5c-1.1 0-2 .9-2 2v3H3v2h2v2H3v2h2v2H3v2h2v2c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg></div>
+        <div class="kpi-v" id="tot-tx-count">5</div><div class="kpi-l">Transactions</div><div class="kpi-d up">Completed sales</div>
+      </div>
+    </div>
+
+    <!-- TOT Breakdown Table -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-h" style="padding-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+        <div><div class="card-title">Monthly Revenue Trends</div><div class="card-sub">Weekly breakdown with TOT</div></div>
+      </div>
+      <div class="card-b" style="padding-top:0">
+        <div class="rch"><canvas id="totTrendChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h" style="padding-bottom:16px"><div class="card-title">Turnover Tax Breakdown</div><div class="card-sub">Detailed sales log for KRA TOT filing</div></div>
+      <div class="card-b" style="padding-top:0;overflow-x:auto">
+        <table style="min-width:520px" id="tot-table">
+          <thead><tr>
+            <th>Week</th><th>Gross Sales</th><th>TOT (1.5%)</th><th>Net Revenue</th><th>Transactions</th>
+          </tr></thead>
+          <tbody id="tot-tbody"></tbody>
+          <tfoot id="tot-tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settings" class="page-wrap page">
+    <div class="dash-top" style="margin-bottom:20px"><div><div class="dash-greet">Settings</div><div class="dash-date">System configuration</div></div></div>
+    <div class="settings-grid">
+      <div class="card"><div class="card-h"><div class="card-title">Business Info</div></div><div class="card-b">
+        <div class="ff"><label for="biz-name">Business Name</label><input id="biz-name" value="Macrome Electronics" maxlength="60"></div>
+        <div class="ff"><label for="biz-loc">Location</label><input id="biz-loc" value="Chuka Town" maxlength="80"></div>
+        <div class="ff"><label for="biz-phone">Phone</label><input id="biz-phone" value="0715186441" placeholder="e.g. 07XX XXX XXX" maxlength="30"></div>
+        <div class="ff"><label for="biz-till">M-Pesa Till</label><input id="biz-till" value="" placeholder="M-Pesa Till / Paybill" maxlength="30"></div>
+        <button class="btn btn-p" style="width:100%;justify-content:center" onclick="saveBiz()">Save Changes</button>
+      </div></div>
+      <div class="card"><div class="card-h"><div class="card-title">POS Settings</div></div><div class="card-b">
+        <div class="srow"><div><div class="slbl">Auto-print receipts</div><div class="sdesc">Print after every sale</div></div><div class="toggle on" id="autoprint-toggle" onclick="toggleAutoPrint(this)"></div></div>
+        <div class="srow"><div><div class="slbl">Sound on sale</div><div class="sdesc">Audio feedback</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="srow"><div><div class="slbl">Turnover Tax (TOT 1.5%)</div><div class="sdesc">KRA Turnover Tax — Monthly 1.5%</div></div><div class="toggle on" id="tot-toggle" onclick="toggleTOT(this)"></div></div>
+        <div class="srow"><div><div class="slbl">TOT Rate (%)</div><div class="sdesc">Current: 1.5% (KRA default)</div></div><input id="tot-rate-input" type="number" step="0.01" min="0" max="100" value="1.5" style="width:70px;padding:6px 10px;border:1.5px solid var(--g100);border-radius:var(--r-sm);font-size:13px;font-weight:700;color:var(--text-brand);background:var(--g50)" onchange="updateTOTRate(this.value)"></div>
+        <div class="srow"><div><div class="slbl">Low stock alerts</div><div class="sdesc">Alert at 5 units</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="srow"><div><div class="slbl">Offline mode</div><div class="sdesc">Work without internet</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      </div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Shops</div></div><div class="card-b">
+        <div class="sdesc" style="margin-bottom:10px">Name your three shops. Stock is counted per shop; the product list and prices are shared.</div>
+        <div id="shops-form"></div>
+        <button class="btn btn-p" style="width:100%;justify-content:center" onclick="saveShops()">Save Shops</button>
+      </div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Staff Accounts</div></div><div class="card-b">
+        <div class="sdesc" id="staff-cloud-note" style="display:none;margin-bottom:12px"></div>
+        <div class="cl" id="staff-list"></div>
+        <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:16px" onclick="openStaffModal()">Add Staff</button>
+        <button class="btn btn-s" style="width:100%;justify-content:center;margin-top:8px" onclick="openPwModal(currentUser&&currentUser.id)">Change My Password</button>
+      </div></div>
+      <div class="card"><div class="card-h"><div class="card-title">Data & Backup</div></div><div class="card-b">
+        <div class="srow"><div><div class="slbl">Saved on this device</div><div class="sdesc" id="bk-saved">—</div></div><span class="badge bg" id="bk-badge">✓ Auto-save on</span></div>
+        <div class="srow"><div><div class="slbl">Last backup file</div><div class="sdesc" id="bk-file">No backup file downloaded yet</div></div></div>
+        <div class="srow"><div><div class="slbl">Storage protection</div><div class="sdesc" id="bk-persist">Checking…</div></div></div>
+        <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:8px" onclick="backupNow()">Backup Now</button>
+        <button class="btn btn-s" style="width:100%;justify-content:center;margin-top:8px" onclick="shareBackup()">Share Backup (WhatsApp / Drive)</button>
+        <button class="btn btn-s" style="width:100%;justify-content:center;margin-top:8px" onclick="document.getElementById('bk-restore').click()">Restore from Backup</button>
+        <button class="btn btn-d" style="width:100%;justify-content:center;margin-top:8px" onclick="resetSales()">Clear Sales History</button>
+        <input type="file" id="bk-restore" accept=".json,application/json" style="display:none" onchange="restoreBackup(this)">
+      </div></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- BOTTOM NAV -->
+<nav class="bot-nav">
+  <div class="bot-nav-inner">
+    <div class="bn-i active" id="bn-dashboard" onclick="go('dashboard',document.querySelector('[data-page=dashboard]'));setBN('dashboard')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span>Home</span></div>
+    <div class="bn-i" id="bn-pos" onclick="go('pos',document.querySelector('[data-page=pos]'));setBN('pos')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg><span>POS</span><div class="bn-pip"></div></div>
+    <div class="bn-i" id="bn-inventory" onclick="go('inventory',document.querySelector('[data-page=inventory]'));setBN('inventory')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span>Inventory</span></div>
+    <div class="bn-i" id="bn-reports" onclick="go('reports',document.querySelector('[data-page=reports]'));setBN('reports')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"/></svg><span>Reports</span></div>
+    <div class="bn-i" id="bn-settings" onclick="go('settings',document.querySelector('[data-page=settings]'));setBN('settings')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><span>Settings</span></div>
+    <div class="bn-i" id="bn-cashier-history" style="display:none" onclick="go('cashier-history',null);setBN('cashier-history')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg><span>My Sales</span></div>
+  </div>
+</nav>
+</div><!-- /app -->
+
+<!-- MOBILE CART DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-ov" onclick="closeDrawer()"></div>
+  <div class="drawer-panel">
+    <div class="dh"></div>
+    <div class="cart-hd"><div class="cart-hdl"><h3>Current Sale</h3><p id="d-count">0 items</p></div><button class="cart-clr" onclick="clearCart()">Clear</button></div>
+    <div class="cart-bd" id="d-bd" style="flex:1;overflow-y:auto;padding:10px 16px"></div>
+    <div class="cart-ft">
+      <div class="tot-row"><span class="tot-l">Subtotal</span><span class="tot-v" id="d-sub">KES 0</span></div>
+      <div class="tot-row tot-grand"><span class="tot-l">Total</span><span class="tot-v" id="d-tot">KES 0</span></div>
+      <div class="pay-chips">
+        <div class="pchip on" id="dpc-cash" onclick="selPay('cash')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z"/></svg> Cash</div>
+        <div class="pchip" id="dpc-mpesa" onclick="selPay('mpesa')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 1.01 7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg> M-Pesa</div>
+        <div class="pchip" id="dpc-card" onclick="selPay('card')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg> Card</div>
+      </div>
+      <div class="pay-extra" id="d-pay-extra"></div>
+      <button class="chk-btn" id="d-chk" onclick="checkout()" disabled>
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Complete Sale
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT / STOCK MODALS -->
+<div class="pm-ov" id="prod-modal" onclick="if(event.target===this)closeProdModal()">
+  <div class="pm">
+    <h3 id="pm-title">Add Product</h3>
+    <div class="pm-sub">Saved on this device as soon as you tap Save.</div>
+    <input type="hidden" id="pm-id">
+    <div class="ff"><label for="pm-name">Product name</label><input id="pm-name" maxlength="80" placeholder="e.g. 32-inch LED TV" autocomplete="off"></div>
+    <div class="pm-row">
+      <div class="ff"><label for="pm-sku">SKU / code</label><input id="pm-sku" maxlength="30" placeholder="Auto if blank" autocomplete="off"></div>
+      <div class="ff"><label for="pm-cat">Category</label><input id="pm-cat" list="pm-cats" maxlength="40" placeholder="Electronics" autocomplete="off"><datalist id="pm-cats"></datalist></div>
+    </div>
+    <div class="pm-row pm-row3">
+      <div class="ff"><label for="pm-retail">Retail (KES)</label><input id="pm-retail" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="ff"><label for="pm-cost">Cost price — what you paid (KES)</label><input id="pm-cost" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="ff"><label id="pm-qty-l">In stock</label><input id="pm-qty" type="number" inputmode="numeric" min="0" step="1"></div>
+    </div>
+    <div class="ff" id="pm-qs-row" style="display:none"><label>Stock in each shop</label><div class="pm-row pm-row3" id="pm-qs-in" style="grid-template-columns:repeat(3,1fr)"></div></div>
+    <div class="pm-err" id="pm-err"></div>
+    <div class="pm-act"><button class="btn btn-s" onclick="closeProdModal()">Cancel</button><button class="btn btn-p" onclick="saveProd()">Save Product</button></div>
+  </div>
+</div>
+<div class="pm-ov" id="stock-modal" onclick="if(event.target===this)closeStockModal()">
+  <div class="pm" style="width:min(380px,100%)">
+    <h3>Receive Stock</h3>
+    <div class="pm-sub" id="sm-info"></div>
+    <div class="ff"><label for="sm-shop">Receive into shop</label><select id="sm-shop" onchange="stockShopChanged()"></select></div>
+    <div class="ff"><label for="sm-qty">Units received</label><input id="sm-qty" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 5"></div>
+    <div class="pm-err" id="sm-err"></div>
+    <div class="pm-act"><button class="btn btn-s" onclick="closeStockModal()">Cancel</button><button class="btn btn-p" onclick="applyStock()">Add to Stock</button></div>
+  </div>
+</div>
+
+<div class="pm-ov" id="transfer-modal" onclick="if(event.target===this)closeTransferModal()">
+  <div class="pm" style="width:min(420px,100%)">
+    <h3>Move Stock Between Shops</h3>
+    <div class="pm-sub" id="tf-name"></div>
+    <div class="pm-sub" id="tf-have" style="font-size:12px"></div>
+    <div class="pm-row">
+      <div class="ff"><label for="tf-from">From</label><select id="tf-from" onchange="xferFromChanged()"></select></div>
+      <div class="ff"><label for="tf-to">To</label><select id="tf-to"></select></div>
+    </div>
+    <div class="ff"><label for="tf-qty">Units to move</label><input id="tf-qty" type="number" inputmode="numeric" min="1" step="1" placeholder="e.g. 3"></div>
+    <div class="pm-err" id="tf-err"></div>
+    <div class="pm-act"><button class="btn btn-s" onclick="closeTransferModal()">Cancel</button><button class="btn btn-p" onclick="applyTransfer()">Move Stock</button></div>
+  </div>
+</div>
+
+<!-- STAFF MODALS -->
+<div class="pm-ov" id="staff-modal" onclick="if(event.target===this)closeStaffModal()">
+  <div class="pm" style="width:min(420px,100%)">
+    <h3>Add Staff</h3>
+    <div class="pm-sub">They sign in with this username and password.</div>
+    <div class="ff"><label for="st-name">Full name</label><input id="st-name" maxlength="40" autocomplete="off"></div>
+    <div class="pm-row">
+      <div class="ff"><label for="st-user">Username</label><input id="st-user" maxlength="20" autocapitalize="none" spellcheck="false" autocomplete="off" placeholder="e.g. grace"></div>
+      <div class="ff"><label for="st-role">Role</label><select id="st-role"></select></div>
+    </div>
+    <div class="ff"><label for="st-shop">Works in shop</label><select id="st-shop"></select></div>
+    <div class="pm-row">
+      <div class="ff"><label for="st-pw">Password</label><input id="st-pw" type="password" autocomplete="new-password"></div>
+      <div class="ff"><label for="st-pw2">Confirm</label><input id="st-pw2" type="password" autocomplete="new-password"></div>
+    </div>
+    <div class="pm-err" id="st-err"></div>
+    <div class="pm-act"><button class="btn btn-s" onclick="closeStaffModal()">Cancel</button><button class="btn btn-p" onclick="saveStaff()">Create Account</button></div>
+  </div>
+</div>
+<div class="pm-ov" id="pw-modal" onclick="if(event.target===this)closePwModal()">
+  <div class="pm" style="width:min(400px,100%)">
+    <h3 id="pw-title">Reset Password</h3>
+    <div class="pm-sub" id="pw-sub"></div>
+    <div class="ff" id="pw-cur-w"><label for="pw-cur">Current password</label><input id="pw-cur" type="password" autocomplete="current-password"></div>
+    <div class="ff"><label for="pw-new">New password</label><input id="pw-new" type="password" autocomplete="new-password"></div>
+    <div class="ff"><label for="pw-new2">Confirm new password</label><input id="pw-new2" type="password" autocomplete="new-password"></div>
+    <div class="pm-err" id="pw-err"></div>
+    <div class="pm-act"><button class="btn btn-s" onclick="closePwModal()">Cancel</button><button class="btn btn-p" onclick="savePw()">Save Password</button></div>
+  </div>
+</div>
+
+<!-- RECEIPT -->
+<div id="overlay" class="overlay" onclick="closeRct(event)">
+  <div class="rp">
+    <div class="rpt"><div class="rpl"><span class="m-badge m-badge-sm">M</span> Macrome Electronics</div><div class="rpa">Chuka Town<br>Tel: 0715186441</div></div>
+    <div class="rpb">
+      <div class="rpmeta">
+        <div class="rpmeta-i"><div class="rpml">Receipt</div><div class="rpmv" style="font-size:12px;font-family:monospace">#REC-0001</div></div>
+        <div class="rpmeta-i"><div class="rpml">Date</div><div class="rpmv" id="r-date" style="font-size:12px"></div></div>
+        <div class="rpmeta-i"><div class="rpml">Cashier</div><div class="rpmv" style="font-size:12px">Cashier</div></div>
+        <div class="rpmeta-i"><div class="rpml">Pay</div><div class="rpmv" id="r-pay" style="font-size:12px">Cash</div></div>
+      </div>
+      <div id="r-items"></div>
+      <div class="rptots">
+        <div class="rptr"><span>Subtotal</span><span id="r-sub">KES 0</span></div>
+        <div class="rptr" id="r-paid-row" style="display:none"><span>Cash received</span><span id="r-paid"></span></div>
+        <div class="rptr" id="r-chg-row" style="display:none"><span>Change</span><span id="r-chg"></span></div>
+        <div class="rptr" id="r-ref-row" style="display:none"><span>M-Pesa code</span><span id="r-ref"></span></div>
+      </div>
+      <div class="rpgrand"><div class="rpgl">TOTAL PAID</div><div class="rpgv" id="r-tot">KES 0</div></div>
+      <div class="rpfoot" style="margin-top:16px">
+        <p style="margin-top:10px">Thank you for shopping at Macrome Electronics!</p>
+        <p>Furniture | Electronics | Household Goods</p>
+      </div>
+    </div>
+    <div class="rpacts">
+      <button class="rpbtn rpprint" onclick="openPrintPanel()"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg> Print</button>
+      <button class="rpbtn" style="background:var(--gold);color:#fff;flex:1" onclick="saveReceiptPDF()">⬇ PDF</button>
+      <button class="rpbtn rpnew" onclick="newSale()">New Sale</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ THERMAL PRINT PANEL ══════════════════════════════════ -->
+<div id="thermal-panel" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(8,5,24,.7);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closePrintPanel()">
+  <div style="background:var(--white);border-radius:20px 20px 0 0;padding:0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.25)">
+    <!-- Handle -->
+    <div style="display:flex;justify-content:center;padding:12px 0 4px"><div style="width:40px;height:4px;border-radius:2px;background:var(--g100)"></div></div>
+    <!-- Header -->
+    <div style="padding:12px 20px 16px;border-bottom:1px solid var(--g100)">
+      <div style="font-size:17px;font-weight:800;color:var(--ink)"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg> Print Receipt</div>
+      <div style="font-size:12px;color:var(--g400);margin-top:2px">P58E Thermal Printer — 58mm roll</div>
+    </div>
+
+    <!-- BT Status Bar -->
+    <div id="bt-status-bar" style="margin:14px 16px 0;padding:10px 14px;border-radius:10px;background:var(--g50);border:1.5px solid var(--g100);display:flex;align-items:center;gap:10px">
+      <div id="bt-dot" style="width:10px;height:10px;border-radius:50%;background:var(--g200);flex-shrink:0;transition:.3s"></div>
+      <div>
+        <div id="bt-status-text" style="font-size:13px;font-weight:700;color:var(--ink)">Not connected</div>
+        <div id="bt-status-sub" style="font-size:12px;color:var(--g400)">Tap "Connect Printer" to pair your P58E</div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+
+      <!-- Connect / Print button -->
+      <button id="bt-main-btn" onclick="thermalMainAction()" style="width:100%;padding:16px;border-radius:12px;background:var(--green);color:#fff;border:none;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px">
+        <span><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="m14.24 12.01 2.32 2.32c.28-.72.44-1.51.44-2.33 0-.82-.16-1.59-.43-2.31l-2.33 2.32zm5.29-5.3-1.26 1.26c.63 1.21.98 2.57.98 4.02s-.36 2.82-.98 4.02l1.2 1.2a9.936 9.936 0 0 0 1.54-5.31c-.01-1.89-.55-3.67-1.48-5.19zm-3.82 1L10 2H9v7.59L4.41 5 3 6.41 8.59 12 3 17.59 4.41 19 9 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29zM11 5.83l1.88 1.88L11 9.59V5.83zm1.88 10.46L11 18.17v-3.76l1.88 1.88z"/></svg></span><span id="bt-main-label">Connect Printer</span>
+      </button>
+
+      <!-- Channel check: shown while a Bluetooth printer is connected -->
+      <div id="bt-diag" style="display:none;padding:12px 14px;border-radius:12px;background:var(--g50);border:1.5px solid var(--g100)">
+        <div style="font-size:12px;font-weight:800;color:var(--ink)">Receipt sent but nothing prints?</div>
+        <div id="bt-diag-info" style="font-size:12px;color:var(--g400);margin:3px 0 10px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-s" onclick="btTest()"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.8 18.4 14 10.67V6.5l1.35-1.69c.26-.33.03-.81-.39-.81H9.04c-.42 0-.65.48-.39.81L10 6.5v4.17L4.2 18.4c-.49.66-.02 1.6.8 1.6h14c.82 0 1.29-.94.8-1.6z"/></svg> Test print</button>
+          <button class="btn btn-s" id="bt-diag-next" onclick="btNext()">↻ Try next channel</button>
+          <button class="btn btn-p" onclick="btKeep()">✓ It printed</button>
+        </div>
+      </div>
+
+      <!-- Download TXT fallback -->
+      <button onclick="downloadReceiptTxt()" style="width:100%;padding:14px;border-radius:12px;background:var(--pale);color:var(--text-brand);border:1.5px solid var(--mint);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <span><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg></span> Download as .txt (use with PrintHand)
+      </button>
+
+      <!-- Browser print -->
+      <button onclick="browserPrint()" style="width:100%;padding:14px;border-radius:12px;background:var(--g50);color:var(--g600);border:1.5px solid var(--g100);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <span><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 3H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h6v2H8v2h8v-2h-2v-2h6c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2"/></svg></span> Print via Browser (WiFi/USB printer)
+      </button>
+
+      <!-- USB / Serial thermal printer (hidden unless the browser supports it) -->
+      <button id="raw-print-btn" onclick="rawPrint()" style="display:none;width:100%;padding:14px;border-radius:12px;background:var(--g50);color:var(--g600);border:1.5px solid var(--g100);font-size:14px;font-weight:700;cursor:pointer;align-items:center;justify-content:center;gap:8px">
+        <span><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.01 7 16 3h-2v4h-4V3H8v4h-.01C7 6.99 6 7.99 6 8.99v5.49L9.5 18v3h5v-3l3.5-3.51v-5.5c0-1-1-2-1.99-1.99z"/></svg></span> Print to USB / Serial printer
+      </button>
+
+      <!-- PrintHand link -->
+      <a href="https://play.google.com/store/apps/details?id=com.dynamixsoftware.printershare" target="_blank" rel="noopener" style="width:100%;padding:12px;border-radius:12px;background:#fff;color:var(--g400);border:1.5px dashed var(--g100);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none">
+        <svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 18H7V6h7V1H7c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-5h-2v2zm18 14 5-5-1.41-1.41L19 10.17V3h-2v7.17l-2.59-2.58L13 9z"/></svg> Get PrintHand app on Google Play
+      </a>
+    </div>
+
+    <!-- Receipt preview -->
+    <div style="margin:0 16px 16px;border-radius:12px;background:#fafafa;border:1px solid var(--g100);overflow:hidden">
+      <div style="padding:10px 14px;background:var(--g50);border-bottom:1px solid var(--g100);font-size:12px;font-weight:700;color:var(--g400);text-transform:uppercase;letter-spacing:.8px">Receipt Preview (58mm)</div>
+      <pre id="thermal-preview" style="font-family:'Courier New',monospace;font-size:12px;line-height:1.55;padding:14px;white-space:pre-wrap;color:var(--ink);margin:0;overflow-x:auto"></pre>
+    </div>
+
+    <!-- Back to Dashboard button -->
+    <div style="padding:0 16px 12px">
+      <button onclick="closePrintPanel()" style="width:100%;padding:14px;border-radius:12px;background:var(--ink);color:#fff;border:none;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">&#8592; Back to Dashboard</button>
+    </div>
+
+    <!-- Bottom safe area -->
+    <div style="height:env(safe-area-inset-bottom,16px)"></div>
+  </div>
+  </div>
+</div>
+
+<!-- Camera barcode scanner -->
+<div id="scan-ov" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(8,5,24,.88);align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:16px">
+  <div style="color:#fff;font-weight:800;font-size:15px">Point the camera at a barcode</div>
+  <video id="scan-video" playsinline muted style="width:100%;max-width:420px;border-radius:14px;background:#000"></video>
+  <button class="btn btn-s" onclick="closeScanner()" style="min-width:140px;justify-content:center">Cancel</button>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="toast"></div>
+
+<!-- PDF Loading overlay -->
+<div id="pdfLoader" class="pdf-loader">
+  <div class="pdf-loader-box">
+    <div class="pdf-loader-icon"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></div>
+    <div class="pdf-loader-title">Generating PDF</div>
+    <div class="pdf-loader-sub">Please wait a moment…</div>
+    <div class="pdf-spinner"></div>
+  </div>
+</div>
+
+
+<script src="js/receipt.js?v=008f923ea2"></script>
+<script src="js/receipt-config.js?v=008f923ea2"></script>
+<script src="js/icons.js?v=008f923ea2"></script>
+<script src="js/firebase-config.js?v=008f923ea2"></script>
+<script>
+/* Cloud mode only: load the Firebase libraries from vendor/ (made by tools/vendor.py), else from Google's CDN.
+   With no Firebase config nothing is loaded and Macrome runs in single-device mode. */
+(function(){
+  var fb=(window.MACROME_CLOUD||{}).firebase||{}; if(!fb.apiKey) return;
+  var cdn='https://www.gstatic.com/firebasejs/10.14.1/firebase-';
+  var ok={app:function(){return window.firebase&&firebase.initializeApp;},auth:function(){return window.firebase&&firebase.auth;},firestore:function(){return window.firebase&&firebase.firestore;}};
+  window.__fbLoad=function(n){ if(!ok[n]()) document.write('<script src="'+cdn+n+'-compat.js"><\/script>'); };
+  ['app','auth','firestore'].forEach(function(n){
+    document.write('<script src="vendor/firebase-'+n+'-compat.js"><\/script><script>__fbLoad("'+n+'")<\/script>');
+  });
+})();
+</script>
+<script src="js/cloud.js?v=008f923ea2"></script>
+<script src="js/app.js?v=008f923ea2"></script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MACROME PWA — Install Banner, Service Worker, Manifest
+     All inline — single HTML file, zero external dependencies
+     ═══════════════════════════════════════════════════════════ -->
+
+<!-- PWA Install Banner -->
+<div id="pwa-banner" style="
+  display:none; position:fixed; bottom:0; left:0; right:0; z-index:9990;
+  background:linear-gradient(135deg,#0D0534,#1B0B69);
+  padding:14px 18px 18px; padding-bottom:max(18px,env(safe-area-inset-bottom));
+  box-shadow:0 -4px 24px rgba(0,0,0,0.3);
+  border-radius:20px 20px 0 0;
+  animation:bannerSlide .4s cubic-bezier(.4,0,.2,1);
+  font-family:'Plus Jakarta Sans',sans-serif;
+">
+<div class="pwa-row">
+  <div class="pwa-logo"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4c-1 0-2 .9-2 2v3.01c0 .72.43 1.34 1 1.69V20c0 1.1 1.1 2 2 2h14c.9 0 2-.9 2-2V8.7c.57-.35 1-.97 1-1.69V4c0-1.1-1-2-2-2zm-5 12H9v-2h6v2zm5-7H4V4h16v3z"/></svg></div>
+  <div class="pwa-text">
+    <div class="pwa-title">Install Macrome Electronics</div>
+    <div class="pwa-sub">Add to home screen for the full app experience — works offline too!</div>
+  </div>
+</div>
+<div class="pwa-features">
+  <div class="pwa-feat"><span><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66.19-.34.05-.08.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"/></svg></span> Fast & offline</div>
+  <div class="pwa-feat"><span><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 1.01 7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg></span> Native app feel</div>
+  <div class="pwa-feat"><span><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg></span> Stock alerts</div>
+  <div class="pwa-feat"><span><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg></span> Receipt printing</div>
+</div>
+<div class="pwa-btns">
+  <button class="pwa-install-btn" onclick="installPWA()">
+    <svg viewBox="0 0 24 24" fill="currentColor" style="width:18px;height:18px"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+    Install App
+  </button>
+  <button class="pwa-dismiss-btn" onclick="dismissBanner()" title="Dismiss"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+</div>
+</div>
+
+<!-- iOS Install Tip (shown on Safari/iOS when PWA prompt isn't available) -->
+<div id="ios-banner" style="
+  display:none; position:fixed; bottom:0; left:0; right:0; z-index:9990;
+  background:linear-gradient(135deg,#0D0534,#1B0B69);
+  padding:16px 18px 20px; padding-bottom:max(20px,env(safe-area-inset-bottom));
+  box-shadow:0 -4px 24px rgba(0,0,0,0.3);
+  border-radius:20px 20px 0 0;
+  animation:bannerSlide .4s cubic-bezier(.4,0,.2,1);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  text-align:center;
+">
+<div style="font-size:24px;margin-bottom:8px"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 18H7V6h7V1H7c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-5h-2v2zm18 14 5-5-1.41-1.41L19 10.17V3h-2v7.17l-2.59-2.58L13 9z"/></svg></div>
+<div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:4px">Install Macrome Electronics on iPhone</div>
+<div style="font-size:12px;color:rgba(255,255,255,.7);line-height:1.6;margin-bottom:12px">
+  Tap <strong style="background:rgba(255,255,255,.15);padding:2px 7px;border-radius:6px">Share</strong> 
+  then select <strong style="background:rgba(255,255,255,.15);padding:2px 7px;border-radius:6px">Add to Home Screen</strong> 
+  to install the full app.
+</div>
+<div style="display:flex;justify-content:center;align-items:flex-end;gap:4px;margin-bottom:8px">
+  <svg viewBox="0 0 24 24" fill="rgba(255,255,255,.6)" style="width:20px;height:20px"><path d="M16 5l-1.42 1.42-1.59-1.59V16h-1.98V4.83L9.42 6.42 8 5l4-4 4 4zm4 5v11c0 1.1-.9 2-2 2H6c-1.11 0-2-.9-2-2V10c0-1.11.89-2 2-2h3v2H6v11h12V10h-3V8h3c1.1 0 2 .89 2 2z"/></svg>
+  <svg viewBox="0 0 24 24" fill="rgba(255,255,255,.4)" style="width:16px;height:16px"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+  <svg viewBox="0 0 24 24" fill="rgba(255,255,255,.6)" style="width:20px;height:20px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+</div>
+<button onclick="document.getElementById('ios-banner').style.display='none'" style="padding:8px 24px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.2);border-radius:10px;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Got it</button>
+</div>
+
+<!-- Offline Toast -->
+<div id="offline-toast" style="
+  display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%);
+  background:#c0392b; color:#fff; padding:10px 20px; border-radius:50px;
+  font-size:13px; font-weight:700; z-index:9995; box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  display:none; align-items:center; gap:8px; font-family:'Plus Jakarta Sans',sans-serif;
+  animation:bannerSlide .3s ease;
+">
+  <svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg> You're offline — POS still works!
+</div>
+
+<!-- Online Toast -->
+<div id="online-toast" style="
+  display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%);
+  background:#1B0B69; color:#fff; padding:10px 20px; border-radius:50px;
+  font-size:13px; font-weight:700; z-index:9995; box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  align-items:center; gap:8px; font-family:'Plus Jakarta Sans',sans-serif;
+">
+  <svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg> Back online!
+</div>
+
+<!-- Update Available Banner -->
+<div id="update-banner" style="
+  display:none; position:fixed; top:70px; left:50%; transform:translateX(-50%);
+  background:linear-gradient(135deg,#150857,#1B0B69); color:#fff;
+  padding:10px 18px; border-radius:50px; font-size:13px; font-weight:700;
+  z-index:9995; box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  align-items:center; gap:10px; font-family:'Plus Jakarta Sans',sans-serif; cursor:pointer;
+  white-space:nowrap;
+" onclick="window.location.reload()">
+  <svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg> Update available — tap to refresh
+</div>
+
+<script src="js/pwa.js?v=008f923ea2"></script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+rules_version = '2';
+
+// MACROME — Firestore security rules
+// Paste into Firebase console → Firestore Database → Rules → Publish.
+//
+//  BEFORE YOU PASTE: change the setup code on the line marked  <<< CHANGE THIS.
+//  Edit it in the console only (this folder is uploaded with the app, so a real code written here would be public).
+//  The code is asked once, on the very first launch, to create the owner account. After that it does nothing.
+//
+// Roles (field `role` in users/{uid}):
+//   super    owner: everything, all shops
+//   admin    manager. shop = ''  -> all shops;  shop = 'A'|'B'|'C' -> that shop only
+//   cashier  attendant: one shop only, can sell and read that shop's stock and sales
+//
+// Phase 1 uses: users, meta, bootstrap.   Phase 2 adds: settings, products, stock, stockReceipts, transfers.
+// Phase 3 adds: sales, counters, costs.   Phase 4 adds: expenses (and a month field on stock receipts).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function setupCode() { return 'Monstermash1'; }    // <<< CHANGE THIS
+
+    // ── who is asking ──────────────────────────────────────────
+    function signedIn()   { return request.auth != null; }
+    function myPath()     { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function hasProfile() { return signedIn() && exists(myPath()); }
+    function me()         { return get(myPath()).data; }
+    function active()     { return hasProfile() && me().active == true; }          // switched-off accounts get nothing
+    function isSuper()    { return active() && me().role == 'super'; }
+    function isManager()  { return active() && (me().role == 'super' || me().role == 'admin'); }
+    function isHQ()       { return isManager() && me().shop == ''; }               // manager of all shops
+    function inShop(s)    { return active() && (isHQ() || me().shop == s); }       // may see / sell in shop s
+    function managesShop(s) { return isManager() && (me().shop == '' || me().shop == s); }
+    function validShop(s) { return s in ['A', 'B', 'C']; }
+
+    // ── a user record must look exactly like this ──────────────
+    function userShape(d, creating) {
+      return d.keys().hasOnly(['name', 'username', 'role', 'shop', 'code', 'active', 'created'])
+        && d.keys().hasAll(['name', 'username', 'role', 'shop', 'code', 'active'])
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 40
+        && d.username is string && d.username.matches('^[a-z0-9._-]{3,20}$')
+        && d.code is string && d.code.matches('^[A-Z0-9]{3}$')
+        && d.active is bool && (!creating || d.active == true)
+        && d.role in ['super', 'admin', 'cashier']
+        && (d.shop == '' || validShop(d.shop))
+        && (d.role != 'cashier' || d.shop != '')
+        && (d.role != 'super' || d.shop == '');
+    }
+    // may the signed-in manager manage this person (reset / switch off / move)?
+    function manages(t) {
+      return me().role == 'super'
+        || (me().role == 'admin' && t.role == 'cashier' && (me().shop == '' || me().shop == t.shop));
+    }
+
+    // ── shapes of the Phase 2 records ──────────────────────────
+    function productShape(d) {
+      return d.keys().hasOnly(['n', 's', 'c', 'r', 'created'])
+        && d.keys().hasAll(['n', 's', 'c', 'r'])
+        && d.n is string && d.n.size() > 0 && d.n.size() <= 80
+        && d.s is string && d.s.size() <= 30
+        && d.c is string && d.c.size() <= 40
+        && d.r is number && d.r >= 0;
+    }
+    // a sale document: the id is the receipt number  <shop>-<attendant code>-<running number>[-2]
+    function saleShape(d, sid) {
+      return d.keys().hasOnly(['shop', 'num', 'ts', 'day', 'month', 'cashierUid', 'cashier', 'items', 'pay', 'sub', 'tot', 'paid', 'change', 'ref', 'lines'])
+        && d.keys().hasAll(['shop', 'num', 'ts', 'day', 'month', 'cashierUid', 'cashier', 'items', 'pay', 'sub', 'tot', 'lines'])
+        && validShop(d.shop)
+        && sid.matches('^' + d.shop + '-' + me().code + '-[0-9]{4,7}(-[2-3])?$')
+        && d.num is string && d.num.size() <= 24 && (sid == d.num || sid == d.num + '-2' || sid == d.num + '-3')
+        && d.ts is int && d.day is string && d.day.size() == 10 && d.month is string && d.month.size() == 7
+        && d.cashierUid == request.auth.uid
+        && d.cashier is string && d.cashier.size() <= 40
+        && d.items is int && d.items > 0 && d.pay is string && d.pay.size() <= 12
+        && d.sub is number && d.sub >= 0 && d.tot is number && d.tot >= 0
+        && (!('paid' in d) || (d.paid is number && d.paid >= 0))
+        && (!('change' in d) || (d.change is number && d.change >= 0))
+        && (!('ref' in d) || (d.ref is string && d.ref.size() <= 12))
+        && d.lines is list && d.lines.size() > 0 && d.lines.size() <= 60;
+    }
+    // stock doc id is "<shop>_<productId>", so a record can never be filed under another shop or product
+    function stockShape(d, sid) {
+      return d.keys().hasOnly(['shop', 'pid', 'qty'])
+        && d.keys().hasAll(['shop', 'pid', 'qty'])
+        && validShop(d.shop) && d.pid is string && d.qty is int
+        && sid == d.shop + '_' + d.pid;
+    }
+    function receiptShape(d) {
+      return d.keys().hasOnly(['shop', 'pid', 'n', 'qty', 'by', 'byName', 'at', 'month'])
+        && d.keys().hasAll(['shop', 'pid', 'n', 'qty', 'by', 'byName'])
+        && validShop(d.shop) && d.pid is string && d.n is string
+        && d.qty is int && d.qty > 0
+        && d.by == request.auth.uid && d.byName is string;
+    }
+    function transferShape(d) {
+      return d.keys().hasOnly(['pid', 'n', 'from', 'to', 'qty', 'by', 'byName', 'at'])
+        && d.keys().hasAll(['pid', 'n', 'from', 'to', 'qty', 'by', 'byName'])
+        && validShop(d.from) && validShop(d.to) && d.from != d.to
+        && d.pid is string && d.n is string
+        && d.qty is int && d.qty > 0
+        && d.by == request.auth.uid && d.byName is string;
+    }
+
+    // ── users ──────────────────────────────────────────────────
+    match /users/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid
+                    || (isManager() && (isHQ() || resource.data.shop == me().shop)));
+      allow list: if isManager() && (isHQ() || resource.data.shop == me().shop);
+
+      // first owner (needs the setup code, only while no owner exists) OR a manager adding staff
+      allow create: if (request.auth.uid == uid
+                         && userShape(request.resource.data, true)
+                         && request.resource.data.role == 'super'
+                         && !exists(/databases/$(database)/documents/meta/owner)
+                         && getAfter(/databases/$(database)/documents/meta/owner).data.uid == uid
+                         && getAfter(/databases/$(database)/documents/bootstrap/$(setupCode())).data.uid == uid)
+                    || (isManager() && request.auth.uid != uid
+                         && userShape(request.resource.data, true)
+                         && manages(request.resource.data));
+
+      // a manager may rename, move or switch off someone they manage (never themselves, never change role/username)
+      allow update: if isManager() && request.auth.uid != uid
+                    && manages(resource.data)
+                    && userShape(request.resource.data, false)
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'shop', 'active', 'code'])
+                    && (me().role == 'super' || me().shop == '' || request.resource.data.shop == me().shop);
+
+      allow delete: if false;            // switch accounts off instead; the owner can remove logins in the console
+    }
+
+    // ── first-launch owner setup ───────────────────────────────
+    match /meta/owner {
+      allow get: if true;                // the sign-in screen asks "has the owner been set up yet?"
+      allow create: if signedIn()
+                    && request.resource.data.keys().hasOnly(['uid', 'at'])
+                    && request.resource.data.uid == request.auth.uid
+                    && getAfter(/databases/$(database)/documents/bootstrap/$(setupCode())).data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+    match /bootstrap/{code} {
+      allow create: if signedIn() && code == setupCode()
+                    && !exists(/databases/$(database)/documents/meta/owner)
+                    && request.resource.data.keys().hasOnly(['uid'])
+                    && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if false;
+    }
+
+    // ── shared settings (business info, shop names) ────────────
+    match /settings/{id} {
+      allow read: if active();
+      allow write: if isHQ();
+    }
+
+    // ── product catalogue: shared by all shops; only all-shops managers edit it ──
+    match /products/{pid} {
+      allow read: if active();
+      allow create: if isHQ() && pid.matches('^[0-9]{1,16}$') && productShape(request.resource.data);
+      allow update: if isHQ() && productShape(request.resource.data);
+      allow delete: if isHQ();
+    }
+
+    // ── stock per shop & product: doc id "<shop>_<productId>", fields {shop, pid, qty} ──
+    match /stock/{sid} {
+      allow get, list: if inShop(resource.data.shop);
+      allow create: if stockShape(request.resource.data, sid) && managesShop(request.resource.data.shop);
+      allow update: if stockShape(request.resource.data, sid)
+                    && request.resource.data.shop == resource.data.shop
+                    && ( managesShop(resource.data.shop)
+                         // an attendant can only take stock OUT of their own shop (a sale). It may go below 0
+                         // when two tills sell the last unit offline, because the goods have really left.
+                         || (inShop(resource.data.shop) && request.resource.data.qty < resource.data.qty) );
+      allow delete: if isHQ();
+    }
+
+    // ── cost prices: managers only (attendants' phones never receive them) ──
+    match /costs/{pid} {
+      allow read: if isManager();
+      allow create, update: if isHQ() && request.resource.data.keys().hasOnly(['w'])
+                            && request.resource.data.w is number && request.resource.data.w >= 0;
+      allow delete: if isHQ();
+    }
+
+    // ── sales: written once, never edited. The id is the receipt number. ──
+    match /sales/{id} {
+      allow get, list: if inShop(resource.data.shop);
+      allow create: if inShop(request.resource.data.shop) && saleShape(request.resource.data, id);
+      allow update, delete: if false;
+    }
+
+    // ── each person's last receipt number (so a new phone carries on counting) ──
+    match /counters/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid && active();
+      allow create: if signedIn() && request.auth.uid == uid && active()
+                    && request.resource.data.keys().hasOnly(['n']) && request.resource.data.n is int && request.resource.data.n > 0;
+      allow update: if signedIn() && request.auth.uid == uid && active()
+                    && request.resource.data.keys().hasOnly(['n']) && request.resource.data.n is int && request.resource.data.n > 0;
+      allow list, delete: if false;
+    }
+
+    // ── stock receipts: written once ───────────────────────────
+    match /stockReceipts/{id} {
+      allow get, list: if inShop(resource.data.shop);
+      allow create: if receiptShape(request.resource.data) && managesShop(request.resource.data.shop);
+      allow update, delete: if false;
+    }
+
+    // ── transfers between shops: written once, by all-shops managers (shop managers: revisit in Phase 4) ──
+    match /transfers/{id} {
+      allow get, list: if isHQ();
+      allow create: if isHQ() && transferShape(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    // ── expenses: managers; shop managers only for their own shop. shop '' = shared head-office cost (all-shops managers only) ──
+    function expenseShape(d) {
+      return d.keys().hasOnly(['shop', 'date', 'month', 'cat', 'desc', 'amt', 'by', 'byUid'])
+        && d.keys().hasAll(['shop', 'date', 'month', 'cat', 'desc', 'amt', 'by', 'byUid'])
+        && (d.shop == '' || validShop(d.shop))
+        && d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && d.month is string && d.month == d.date[0:7]
+        && d.cat is string && d.cat.size() > 0 && d.cat.size() <= 40
+        && d.desc is string && d.desc.size() <= 120
+        && d.amt is number && d.amt > 0
+        && d.by is string && d.by.size() <= 40
+        && d.byUid == request.auth.uid;
+    }
+    match /expenses/{id} {
+      allow get, list: if isManager() && (isHQ() || resource.data.shop == me().shop);
+      allow create: if expenseShape(request.resource.data)
+                    && (isHQ() || (isManager() && request.resource.data.shop == me().shop));
+      allow delete: if isHQ() || (isManager() && resource.data.shop == me().shop);
+      allow update: if false;
+    }
+
+    // anything not listed above is refused
+  }
+}
