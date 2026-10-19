@@ -27,7 +27,7 @@
 <script>window.jspdf||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>')</script>
 <script src="vendor/html2canvas.min.js"></script>
 <script>window.html2canvas||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>')</script>
-<link rel="stylesheet" href="css/app.css?v=008f923ea2">
+<link rel="stylesheet" href="css/app.css?v=a56e0de4a1">
 </head>
 <body>
 
@@ -194,11 +194,11 @@
       <div class="cart-bd" id="cart-bd"></div>
       <div class="cart-ft">
         <div class="tot-row"><span class="tot-l">Subtotal</span><span class="tot-v" id="c-sub">KES 0</span></div>
+        <div class="tot-row tot-disc" id="c-disc-row" style="display:none"><span class="tot-l">Discount</span><span class="tot-v" id="c-disc">- KES 0</span></div>
         <div class="tot-row tot-grand"><span class="tot-l">Total</span><span class="tot-v" id="c-tot">KES 0</span></div>
         <div class="pay-chips">
           <div class="pchip on" id="pc-cash" onclick="selPay('cash')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z"/></svg> Cash</div>
           <div class="pchip" id="pc-mpesa" onclick="selPay('mpesa')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 1.01 7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg> M-Pesa</div>
-          <div class="pchip" id="pc-card" onclick="selPay('card')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg> Card</div>
         </div>
         <div class="pay-extra" id="pay-extra"></div>
         <button class="chk-btn" id="chk-btn" onclick="checkout()" disabled>
@@ -543,11 +543,11 @@
     <div class="cart-bd" id="d-bd" style="flex:1;overflow-y:auto;padding:10px 16px"></div>
     <div class="cart-ft">
       <div class="tot-row"><span class="tot-l">Subtotal</span><span class="tot-v" id="d-sub">KES 0</span></div>
+      <div class="tot-row tot-disc" id="d-disc-row" style="display:none"><span class="tot-l">Discount</span><span class="tot-v" id="d-disc">- KES 0</span></div>
       <div class="tot-row tot-grand"><span class="tot-l">Total</span><span class="tot-v" id="d-tot">KES 0</span></div>
       <div class="pay-chips">
         <div class="pchip on" id="dpc-cash" onclick="selPay('cash')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z"/></svg> Cash</div>
         <div class="pchip" id="dpc-mpesa" onclick="selPay('mpesa')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 1.01 7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg> M-Pesa</div>
-        <div class="pchip" id="dpc-card" onclick="selPay('card')"><svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg> Card</div>
       </div>
       <div class="pay-extra" id="d-pay-extra"></div>
       <button class="chk-btn" id="d-chk" onclick="checkout()" disabled>
@@ -649,6 +649,7 @@
       <div id="r-items"></div>
       <div class="rptots">
         <div class="rptr"><span>Subtotal</span><span id="r-sub">KES 0</span></div>
+        <div class="rptr" id="r-disc-row" style="display:none"><span>Discount</span><span id="r-disc"></span></div>
         <div class="rptr" id="r-paid-row" style="display:none"><span>Cash received</span><span id="r-paid"></span></div>
         <div class="rptr" id="r-chg-row" style="display:none"><span>Change</span><span id="r-chg"></span></div>
         <div class="rptr" id="r-ref-row" style="display:none"><span>M-Pesa code</span><span id="r-ref"></span></div>
@@ -765,10 +766,10 @@
 </div>
 
 
-<script src="js/receipt.js?v=008f923ea2"></script>
-<script src="js/receipt-config.js?v=008f923ea2"></script>
-<script src="js/icons.js?v=008f923ea2"></script>
-<script src="js/firebase-config.js?v=008f923ea2"></script>
+<script src="js/receipt.js?v=a56e0de4a1"></script>
+<script src="js/receipt-config.js?v=a56e0de4a1"></script>
+<script src="js/icons.js?v=a56e0de4a1"></script>
+<script src="js/firebase-config.js?v=a56e0de4a1"></script>
 <script>
 /* Cloud mode only: load the Firebase libraries from vendor/ (made by tools/vendor.py), else from Google's CDN.
    With no Firebase config nothing is loaded and Macrome runs in single-device mode. */
@@ -782,8 +783,8 @@
   });
 })();
 </script>
-<script src="js/cloud.js?v=008f923ea2"></script>
-<script src="js/app.js?v=008f923ea2"></script>
+<script src="js/cloud.js?v=a56e0de4a1"></script>
+<script src="js/app.js?v=a56e0de4a1"></script>
 
 <!-- ═══════════════════════════════════════════════════════════
      MACROME PWA — Install Banner, Service Worker, Manifest
@@ -881,6 +882,6 @@
   <svg class="mi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg> Update available — tap to refresh
 </div>
 
-<script src="js/pwa.js?v=008f923ea2"></script>
+<script src="js/pwa.js?v=a56e0de4a1"></script>
 </body>
 </html>
