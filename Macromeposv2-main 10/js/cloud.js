@@ -234,7 +234,8 @@
   }
   function productSteps(o) {                     // o = {id, isNew, fields:{n,s,c,r,w}, qs:{A,B,C} (new), delta:{A:+n} (edit)}
     const id = idStr(o.id), st = [];
-    const f = Object.assign({}, o.fields), w = f.w; delete f.w;           // cost price lives in costs/<id> (managers only), never in products/
+    const f = Object.assign({}, o.fields), w = f.w; delete f.w;
+    if (w !== undefined && f.r !== undefined) f.m = Math.max(0, Math.round((Number(f.r) - Number(w)) * 100) / 100);   // max discount per unit; the cost itself stays manager-only           // cost price lives in costs/<id> (managers only), never in products/
     if (w !== undefined) st.push((b) => b.set(cref(id), { w: Math.max(0, Number(w) || 0) }));
     if (o.isNew) {
       st.push((b) => b.set(pref(id), Object.assign({}, f, { created: ts() })));
@@ -304,6 +305,11 @@
         }));
       }, err));
     }
+  };
+
+  C.setMaxDisc = async function (list) {           // list = [{id, m}]  (managers only: rules)
+    await dbReady;
+    return commit(list.map((x) => (b) => b.update(pref(idStr(x.id)), { m: x.m })));
   };
 
   // One-time tidy for catalogues made before costs moved: copy any product `w` into costs/ and remove it from products/
