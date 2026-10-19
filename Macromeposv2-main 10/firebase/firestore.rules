@@ -54,12 +54,13 @@ service cloud.firestore {
 
     // ── shapes of the Phase 2 records ──────────────────────────
     function productShape(d) {
-      return d.keys().hasOnly(['n', 's', 'c', 'r', 'created'])
+      return d.keys().hasOnly(['n', 's', 'c', 'r', 'm', 'created'])
         && d.keys().hasAll(['n', 's', 'c', 'r'])
         && d.n is string && d.n.size() > 0 && d.n.size() <= 80
         && d.s is string && d.s.size() <= 30
         && d.c is string && d.c.size() <= 40
-        && d.r is number && d.r >= 0;
+        && d.r is number && d.r >= 0
+        && (!('m' in d) || (d.m is number && d.m >= 0));
     }
     // a sale document: the id is the receipt number  <shop>-<attendant code>-<running number>[-2]
     function saleShape(d, sid) {
