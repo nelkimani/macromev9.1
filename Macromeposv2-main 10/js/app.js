@@ -27,6 +27,7 @@ function mkProd(o){
   SHOP_IDS.forEach(i=>{qs[i]=Math.max(0,Math.floor(Number(o.qs&&o.qs[i]))||0);});
   if(!o.qs&&o.q!=null)qs.A=Math.max(0,Math.floor(Number(o.q))||0);   // old single-shop data = Shop A
   const p={id:o.id,n:o.n,s:o.s,c:o.c,e:o.e,r:o.r,w:o.w};
+  if(o.m!=null)Object.defineProperty(p,'m',{value:Number(o.m)||0,enumerable:false,writable:true});   // max discount per unit (retail − cost); lets cashiers discount without seeing the cost
   Object.defineProperty(p,'qs',{value:qs,enumerable:false,writable:true});
   Object.defineProperty(p,'q',{enumerable:true,configurable:true,
     get(){return SCOPE==='ALL'?SHOP_IDS.reduce((t,i)=>t+qs[i],0):qs[SCOPE];},
@@ -205,7 +206,7 @@ function requestLogout(){
   logout();
 }
 function logout(){
-  if(CL.on){ CL.stopSession(); MAC_USERS=[]; PRODS.length=0; TRANSFERS.length=0; CAT={}; STK={}; COSTS={}; SALE_SRC={}; EXP_SRC={}; RECEIPTS=[]; SALES_DAY=''; cashierSales.length=0; EXPENSES.length=0; CLOUD_READY={p:false,s:false}; _scrubbed={}; clearTimeout(_cloudRefT); }   // the Firebase login stays on this phone (so offline sign-in and syncing keep working)
+  if(CL.on){ CL.stopSession(); MAC_USERS=[]; PRODS.length=0; TRANSFERS.length=0; CAT={}; STK={}; COSTS={}; SALE_SRC={}; EXP_SRC={}; RECEIPTS=[]; SALES_DAY=''; cashierSales.length=0; EXPENSES.length=0; CLOUD_READY={p:false,s:false}; _scrubbed={};_mset={}; clearTimeout(_cloudRefT); }   // the Firebase login stays on this phone (so offline sign-in and syncing keep working)
   _sid=0;try{history.replaceState({mac:-1},'');}catch(_){}
   currentRole = 'none'; currentUser = null;
   if(SCOPE==='ALL') SCOPE = LAST_SHOP;       // never leave the till in "All shops" for the next person
@@ -404,10 +405,11 @@ function cartItemsHTML(){
   if(!cart.length)return`<div class="cart-empty"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg><p>Cart is empty</p><small>Tap a product to add</small></div>`;
   return cart.map(i=>`<div class="ci">
     <div class="ci-e">${catIcon((PRODS.find(x=>x.id===i.id)||{}).c)}</div>
-    <div class="ci-inf"><div class="ci-n">${i.n}</div><div class="ci-p">KES ${i.r.toLocaleString()} each</div></div>
+    <div class="ci-inf"><div class="ci-n">${i.n}</div><div class="ci-p">${i.d>0?`<s>KES ${i.r.toLocaleString()}</s> <b style="color:var(--green)">KES ${(i.r-i.d).toLocaleString()}</b> each`:`KES ${i.r.toLocaleString()} each`}</div></div>
     <div class="ci-q"><div class="qb" onclick="chQty(${i.id},-1)">−</div><div class="qn">${i.qty}</div><div class="qb" onclick="chQty(${i.id},1)">+</div></div>
-    <div class="ci-t">KES ${(i.r*i.qty).toLocaleString()}</div>
+    <div class="ci-t">KES ${((i.r-(i.d||0))*i.qty).toLocaleString()}</div>
     <div class="ci-rm" onclick="rmCart(${i.id})">×</div>
+    <div class="ci-disc"><label>Discount (KES off each)</label><input type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${i.d>0?i.d:''}" onchange="setDisc(${i.id},this.value)"></div>
   </div>`).join('');
 }
 function renderCart(){
@@ -423,28 +425,52 @@ function renderCart(){
   updateTotals();
 }
 function chQty(id,d){const i=cart.find(x=>x.id===id);if(i){i.qty=Math.max(1,Math.min(i.qty+d,i.q));renderCart();}}
+// Per-item discount in KES (amount off each unit, not a percentage). It can never take the price below the cost price.
+// Largest discount (KES per unit) allowed on a product: retail − cost. Managers know the cost; cashiers get the precomputed number (p.m).
+// Returns null when unknown (then no discount is allowed).
+function maxDiscOf(id){
+  const p=PRODS.find(x=>x.id===id);if(!p)return null;
+  const w=Number(p.w)||0;
+  if(w>0)return Math.max(0,Math.round((p.r-w)*100)/100);
+  if(p.m!=null&&isFinite(p.m))return Math.max(0,Number(p.m));
+  return null;
+}
+function setDisc(id,v){
+  const i=cart.find(x=>x.id===id);if(!i)return;
+  let d=v===''?0:parseFloat(v);
+  if(isNaN(d)||d<0){showToast('Enter a discount of 0 or more','error');renderCart();return;}
+  d=Math.round(d*100)/100;
+  if(d>0){
+    const max=maxDiscOf(id);
+    if(max==null){showToast('No discount for '+i.n+' yet: ask a manager to open and re-save the product so its minimum price is set','error',5000);i.d=0;renderCart();return;}
+    if(d>max){showToast('Discount too big. Maximum for '+i.n+' is KES '+max.toLocaleString()+' (price cannot go below the buying price)','error',5000);i.d=max;renderCart();return;}
+  }
+  i.d=d;renderCart();
+}
 function rmCart(id){cart=cart.filter(x=>x.id!==id);renderCart();}
 function clearCart(){cart=[];renderCart();closeDrawer();resetPayExtra();}
 function updateTotals(){
   const sub=cart.reduce((s,i)=>s+i.r*i.qty,0);
-  const tot=sub; // TOT is calculated monthly in backend reports only
-  [['c-sub','d-sub'],['c-tot','d-tot']].forEach(([a,b],i)=>{
-    const v=['KES '+sub.toLocaleString(),'KES '+tot.toLocaleString()][i];
+  const disc=cart.reduce((s,i)=>s+(i.d||0)*i.qty,0);
+  const tot=sub-disc; // TOT is calculated monthly in backend reports only
+  [['c-sub','d-sub'],['c-tot','d-tot'],['c-disc','d-disc']].forEach(([a,b],i)=>{
+    const v=['KES '+sub.toLocaleString(),'KES '+tot.toLocaleString(),'- KES '+disc.toLocaleString()][i];
     const ea=document.getElementById(a);const eb=document.getElementById(b);
     if(ea)ea.textContent=v;if(eb)eb.textContent=v;
   });
+  ['c-disc-row','d-disc-row'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.display=disc>0?'':'none';});
   if(typeof updatePeChange==='function')updatePeChange();
 }
 function selPay(m){
   payM=m;
-  ['cash','mpesa','card'].forEach(k=>{
+  ['cash','mpesa'].forEach(k=>{
     ['pc-'+k,'dpc-'+k].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('on',k===m);});
   });
   renderPayExtra();
 }
 // ── CASH RECEIVED / CHANGE / M-PESA CODE ─────────────────
 let payExtra={cash:'',ref:''};
-function peTotal(){return cart.reduce((s,i)=>s+i.r*i.qty,0);}
+function peTotal(){return cart.reduce((s,i)=>s+(i.r-(i.d||0))*i.qty,0);}
 function renderPayExtra(){
   let h='';
   if(payM==='cash')h='<input class="pe-in pe-cash" inputmode="decimal" placeholder="Cash received (optional)" value="'+payExtra.cash+'" oninput="peCash(this.value)"><div class="pe-chg pe-chg-t"></div>';
@@ -465,6 +491,7 @@ function updatePeChange(){
   document.querySelectorAll('.pe-chg-t').forEach(el=>{el.textContent=txt;el.style.color=col;});
 }
 function resetPayExtra(){payExtra={cash:'',ref:''};renderPayExtra();}
+function fillDiscRow(d){const r=document.getElementById('r-disc-row'),v=document.getElementById('r-disc');if(!r||!v)return;r.style.display=d>0?'flex':'none';v.textContent=d>0?'- KES '+Number(d).toLocaleString():'';}
 function fillReceiptExtras(x){
   const set=(row,val,txt)=>{const r=document.getElementById(row),v=document.getElementById(val);if(!r||!v)return;r.style.display=txt?'flex':'none';v.textContent=txt||'';};
   const has=x&&x.paid!=null;
@@ -576,16 +603,21 @@ function checkout(){
     ref=payExtra.ref;
   }
   closeDrawer();
+  // Final guard: no line may be sold below its buying price
+  const below=cart.filter(i=>{if(!((i.d||0)>0))return false;const m=maxDiscOf(i.id);return m==null||i.d>m+0.001;});
+  if(below.length){showToast('Discount on '+below[0].n+' is more than allowed (price cannot go below buying price)','error',5000);return;}
   const sub=cart.reduce((s,i)=>s+i.r*i.qty,0);
-  const tot=sub; // No VAT — TOT is monthly aggregate at 1.5%
+  const disc=cart.reduce((s,i)=>s+(i.d||0)*i.qty,0);
+  const tot=sub-disc; // No VAT — TOT is monthly aggregate at 1.5%
   const now=new Date();
   let receiptNum,cloudSeq=0;
   if(CL.on){cloudSeq=cloudNextSeq();receiptNum=SCOPE+'-'+((currentUser&&currentUser.code)||'STF')+'-'+String(cloudSeq).padStart(4,'0');}   // e.g. A-GRC-0001
   else{receiptNum='#REC-'+String(receiptCounter).padStart(4,'0');receiptCounter++;}
   document.getElementById('r-date').textContent=now.toLocaleDateString('en-KE',{year:'numeric',month:'short',day:'numeric'});
-  document.getElementById('r-pay').textContent={cash:'Cash',mpesa:'M-Pesa',card:'Card'}[payM];
-  document.getElementById('r-items').innerHTML=cart.map(i=>`<div class="rpi"><div><div class="rpin">${i.n}</div><div class="rpiq">× ${i.qty} @ KES ${i.r.toLocaleString()}</div></div><div class="rpit">KES ${(i.r*i.qty).toLocaleString()}</div></div>`).join('');
+  document.getElementById('r-pay').textContent={cash:'Cash',mpesa:'M-Pesa'}[payM];
+  document.getElementById('r-items').innerHTML=cart.map(i=>`<div class="rpi"><div><div class="rpin">${i.n}</div><div class="rpiq">× ${i.qty} @ KES ${i.r.toLocaleString()}${i.d>0?' (less KES '+i.d.toLocaleString()+' each)':''}</div></div><div class="rpit">KES ${((i.r-(i.d||0))*i.qty).toLocaleString()}</div></div>`).join('');
   document.getElementById('r-sub').textContent='KES '+sub.toLocaleString();
+  fillDiscRow(disc);
   document.getElementById('r-tot').textContent='KES '+tot.toLocaleString();
   fillReceiptExtras({paid,change,ref});
   // Update cashier name on receipt
@@ -602,12 +634,12 @@ function checkout(){
     time:now.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}),
     date:now,
     items:cart.reduce((s,i)=>s+i.qty,0),
-    pay:{cash:'Cash',mpesa:'M-Pesa',card:'Card'}[payM],
+    pay:{cash:'Cash',mpesa:'M-Pesa'}[payM],
     sub,tot,paid,change,ref,
     cashier:cashierName,
     cashierId:currentUser?currentUser.username:'',
     shop:SCOPE,
-    lines:cart.map(i=>({id:i.id,n:i.n,qty:i.qty,r:i.r,w:Number(i.w)||0,t:i.r*i.qty}))
+    lines:cart.map(i=>({id:i.id,n:i.n,qty:i.qty,r:i.r,d:i.d||0,w:Number(i.w)||0,t:(i.r-(i.d||0))*i.qty}))
   });
   // Deduct sold quantities from stock, then save everything to the device
   cart.forEach(i=>{const p=PRODS.find(x=>x.id===i.id);if(p)p.q=Math.max(0,p.q-i.qty);});
@@ -694,8 +726,9 @@ function reprintSale(ref){
   document.getElementById('r-date').textContent=(isNaN(sd)?new Date():sd).toLocaleDateString('en-KE',{year:'numeric',month:'short',day:'numeric'});
   const rc=document.querySelector('.rpmeta-i:nth-child(3) .rpmv');if(rc)rc.textContent=s.cashier||'Staff';
   document.getElementById('r-pay').textContent=s.pay;
-  document.getElementById('r-items').innerHTML=s.lines.map(l=>`<div class="rpi"><div><div class="rpin">${l.n}</div><div class="rpiq">× ${l.qty} @ KES ${l.r.toLocaleString()}</div></div><div class="rpit">KES ${l.t.toLocaleString()}</div></div>`).join('');
+  document.getElementById('r-items').innerHTML=s.lines.map(l=>`<div class="rpi"><div><div class="rpin">${l.n}</div><div class="rpiq">× ${l.qty} @ KES ${l.r.toLocaleString()}${l.d>0?' (less KES '+l.d.toLocaleString()+' each)':''}</div></div><div class="rpit">KES ${l.t.toLocaleString()}</div></div>`).join('');
   document.getElementById('r-sub').textContent='KES '+s.sub.toLocaleString();
+  fillDiscRow(Math.max(0,s.sub-s.tot));
   document.getElementById('r-tot').textContent='KES '+s.tot.toLocaleString();
   fillReceiptExtras(s);
   const rvEl=document.querySelector('.rpmv');if(rvEl)rvEl.textContent=s.num;
@@ -1148,7 +1181,7 @@ function macromeToSale(s){
     cashierName:s.cashier||'Staff',
     date:s.date,
     items:(s.lines||[]).map(l=>({product:{name:l.n,sellingPrice:l.r},quantity:l.qty})),
-    subtotal:s.sub,discount:0,total:s.tot,
+    subtotal:s.sub,discount:Math.max(0,s.sub-s.tot),total:s.tot,
     shopName:shopName(saleShop(s)),shopLoc:(SHOPS.find(x=>x.id===saleShop(s))||{}).loc||'',
     paymentMethod:pay,
     reference:s.ref||undefined,                       // M-Pesa code, if entered
@@ -1182,6 +1215,7 @@ function buildThermalReceipt(sale){
   });
   rule();
   L.push(R.pad('Subtotal:',cur+' '+R.money(x.subtotal),W));
+  if(x.discount>0)L.push(R.pad('Discount:','-'+cur+' '+R.money(x.discount),W));
   L.push(R.pad('TOTAL:',cur+' '+R.money(x.total),W));
   L.push(R.pad('Payment:',x.paymentMethod.toUpperCase(),W));
   if(x.reference)L.push(R.pad('Ref:',x.reference,W));
@@ -1211,6 +1245,7 @@ function receiptHTML(sale){
     h+='<div style="margin-top:2px;word-break:break-word">'+e(it.product.name)+'</div>'+row('  '+q+' x '+R.money(u),R.money(u*q));
   });
   h+=rule+row('Subtotal:',cur+' '+R.money(x.subtotal));
+  if(x.discount>0)h+=row('Discount:','-'+cur+' '+R.money(x.discount));
   h+=row('TOTAL:',cur+' '+R.money(x.total),'font-weight:bold;font-size:13px');
   h+=row('Payment:',x.paymentMethod.toUpperCase());
   if(x.reference)h+=row('Ref:',x.reference);
@@ -2995,13 +3030,13 @@ function cloudSessionStart(user){
   CL.loadSeq(user.id).then(n=>{try{const k='macrome-seq-'+user.id;localStorage.setItem(k,String(Math.max(n,parseInt(localStorage.getItem(k),10)||0)));}catch(_){}});   // carry on numbering from the last phone
 }
 // Rebuild the product list from the cloud copies. p.q keeps meaning "stock in the current shop view" (see mkProd).
-let _cloudRefT=0;
+let _cloudRefT=0,_mset={};
 function cloudRebuild(){
   if(!currentUser||!CLOUD_READY.p||!CLOUD_READY.s)return;          // wait until both the products and the stock have arrived
   const list=Object.keys(CAT).map(id=>{
     const d=CAT[id]||{},qs={};SHOP_IDS.forEach(sh=>{qs[sh]=STK[sh+'_'+id]||0;});
     const c=invClean(d.c)||'General';
-    return mkProd({id:Number(id),n:invClean(d.n),s:invClean(d.s),c,e:CAT_ICON[c]||'inventory_2',r:Number(d.r)||0,w:(id in COSTS)?COSTS[id]:(Number(d.w)||0),qs});
+    return mkProd({id:Number(id),n:invClean(d.n),s:invClean(d.s),c,e:CAT_ICON[c]||'inventory_2',r:Number(d.r)||0,w:(id in COSTS)?COSTS[id]:(Number(d.w)||0),m:d.m,qs});
   }).filter(p=>Number.isFinite(p.id)&&p.n);
   list.sort((a,b)=>a.n.localeCompare(b.n));
   PRODS.length=0;list.forEach(p=>PRODS.push(p));
@@ -3009,6 +3044,11 @@ function cloudRebuild(){
     const old=Object.keys(CAT).filter(id=>CAT[id]&&CAT[id].w!==undefined&&!_scrubbed[id]);
     old.forEach(id=>{_scrubbed[id]=1;});
     if(old.length)CL.scrubCosts(old.map(id=>({id,w:(id in COSTS)?COSTS[id]:CAT[id].w}))).catch(e=>console.warn('[Macrome cloud] cost tidy',e&&e.code));
+  }
+  if(currentUser&&isMgr()&&!userShop()){                              // keep each product's max discount (retail − cost) up to date so cashiers can use it
+    const fix=Object.keys(CAT).filter(id=>(id in COSTS)&&CAT[id]&&Number(CAT[id].m)!==Math.max(0,Math.round(((Number(CAT[id].r)||0)-COSTS[id])*100)/100)&&!_mset[id]);
+    fix.forEach(id=>{_mset[id]=1;});
+    if(fix.length)CL.setMaxDisc(fix.map(id=>({id,m:Math.max(0,Math.round(((Number(CAT[id].r)||0)-COSTS[id])*100)/100)}))).catch(e=>{fix.forEach(id=>{delete _mset[id];});console.warn('[Macrome cloud] max discount',e&&e.code);});
   }
   cloudRefresh();
 }
@@ -3051,7 +3091,7 @@ const cloudSaleObj=(id,d)=>{
   return {key:id,uid:d.cashierUid,num:invClean(d.num||id),time:dt.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}),date:dt,items:Number(d.items)||0,pay:invClean(d.pay),
     sub:Number(d.sub)||0,tot:Number(d.tot)||0,paid:d.paid==null?null:Number(d.paid),change:d.change==null?null:Number(d.change),ref:invClean(d.ref||''),
     cashier:invClean(d.cashier),cashierId:d.cashierUid,shop:SHOP_IDS.includes(d.shop)?d.shop:'A',
-    lines:(Array.isArray(d.lines)?d.lines:[]).map(l=>({id:Number(l.id),n:invClean(l.n),qty:Number(l.qty)||0,r:Number(l.r)||0,w:0,t:Number(l.t)||0}))};
+    lines:(Array.isArray(d.lines)?d.lines:[]).map(l=>({id:Number(l.id),n:invClean(l.n),qty:Number(l.qty)||0,r:Number(l.r)||0,d:Number(l.d)||0,w:0,t:Number(l.t)||0}))};
 };
 function cloudSalesRebuild(){
   if(!currentUser)return;
@@ -3073,7 +3113,7 @@ function cloudSaveSale(sale,seq){
   const d=sale.date, p2=v=>String(v).padStart(2,'0');
   const day=d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
   const doc={shop:sale.shop,num:sale.num,ts:+d,day,month:day.slice(0,7),cashierUid:currentUser.id,cashier:String(sale.cashier).slice(0,40),items:sale.items,pay:String(sale.pay).slice(0,12),sub:sale.sub,tot:sale.tot,
-    lines:sale.lines.map(l=>({id:l.id,n:String(l.n).slice(0,80),qty:l.qty,r:l.r,t:l.t}))};
+    lines:sale.lines.map(l=>({id:l.id,n:String(l.n).slice(0,80),qty:l.qty,r:l.r,d:l.d||0,t:l.t}))};
   if(sale.paid!=null)doc.paid=sale.paid;if(sale.change!=null)doc.change=sale.change;if(sale.ref)doc.ref=String(sale.ref).slice(0,12);
   CL.recordSale(doc,seq).then(id=>{if(id!==sale.key)sale.key=id;}).catch(cloudFail('Sale was NOT saved to the cloud'));
 }
