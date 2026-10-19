@@ -252,7 +252,7 @@ input,select{font-family:var(--font);border:none;outline:none;background:none;co
 .cart-empty svg{width:44px;height:44px;opacity:.35}
 .cart-empty p{font-size:13px;font-weight:600}
 .cart-empty small{font-size:12px}
-.ci{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--g50)}
+.ci{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--g50)}
 .ci-e{font-size:20px;flex-shrink:0}
 .ci-inf{flex:1;min-width:0}
 .ci-n{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -666,3 +666,10 @@ a[onclick*="expenses"]{display:inline-flex;align-items:center;min-height:48px}
   @media(max-width:640px){#pos-page.show{height:calc(100dvh - var(--topbar) - var(--bottom-nav) - env(safe-area-inset-bottom))}}
 }
 @media(max-width:640px){.page-wrap{padding-bottom:calc(var(--bottom-nav) + 40px + env(safe-area-inset-bottom))}}
+
+/* per-item discount */
+.ci-disc{order:5;flex:1 0 100%;display:flex;align-items:center;gap:8px;margin-top:6px}
+.ci-disc label{font-size:11px;color:var(--g400);flex:1}
+.ci-disc input{width:110px;padding:6px 8px;border:1.5px solid var(--g100);border-radius:8px;font-size:14px;font-family:inherit;background:var(--white);color:var(--ink)}
+.ci-disc input:focus{outline:none;border-color:var(--text-leaf)}
+.tot-disc .tot-v{color:var(--green)}
